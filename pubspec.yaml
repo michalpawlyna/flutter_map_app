@@ -21,6 +21,7 @@ dev_dependencies:
   http: ^1.4.0
   latlong2: ^0.9.1
   geolocator: ^14.0.1
+  flutter_map_marker_cluster: ^1.4.0
 
 
 flutter:

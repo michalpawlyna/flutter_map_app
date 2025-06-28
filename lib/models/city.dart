@@ -5,7 +5,12 @@ class City {
   final String name;
   final double lat, lng;
 
-  City({required this.id, required this.name, required this.lat, required this.lng});
+  City({
+    required this.id,
+    required this.name,
+    required this.lat,
+    required this.lng
+    });
 
   factory City.fromMap(String id, Map<String, dynamic> data) {
     final loc = data['location'] as GeoPoint;

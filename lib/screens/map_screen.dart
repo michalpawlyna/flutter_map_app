@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
 import '../widgets/navbar_widget.dart';
+import '../widgets/places_markers_widget.dart'; // Add this import
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -33,8 +34,9 @@ class _MapScreenState extends State<MapScreen> {
               initialZoom: 6.0,
               minZoom: 4.0,
               maxZoom: 18.0,
+              
               interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
             ),
             children: [
@@ -43,13 +45,22 @@ class _MapScreenState extends State<MapScreen> {
                 subdomains: const ['a', 'b', 'c', 'd'],
                 retinaMode: RetinaMode.isHighDensity(context),
               ),
+
+              // User location marker + accuracy circle
               UserLocationWidget(mapController: _mapController),
-              // TODO: add marker clusters and polylines here
+
+              // Places markers - Add this line
+              PlacesMarkersWidget(mapController: _mapController),
+
+              // TODO: add polyline layer for routes here
             ],
           ),
+
+          // Center-on-user button
           CenterOnUserButton(mapController: _mapController),
-          // Navbar na spodzie
-          NavbarWidget(selectedIndex: 0),
+
+          // Bottom navigation bar
+          const NavbarWidget(selectedIndex: 0),
         ],
       ),
     );
