@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/map_screen.dart';
+import '../screens/profile_screen.dart';
 
 /// Simple bottom navigation bar with three icons.
 class NavbarWidget extends StatelessWidget {
@@ -13,8 +14,11 @@ class NavbarWidget extends StatelessWidget {
         context,
         MaterialPageRoute(builder: (_) => const MapScreen()),
       );
-    } else {
-      // Placeholder for future navigation
+    } else if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
     }
   }
   

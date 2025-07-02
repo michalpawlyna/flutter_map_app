@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
 import '../widgets/navbar_widget.dart';
-import '../widgets/places_markers_widget.dart'; // Add this import
+import '../widgets/places_markers_widget.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -13,13 +14,19 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
-  late final MapController _mapController;
+class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
+  late final AnimatedMapController _animatedMapController;
 
   @override
   void initState() {
     super.initState();
-    _mapController = MapController();
+    _animatedMapController = AnimatedMapController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _animatedMapController.dispose();
+    super.dispose();
   }
 
   @override
@@ -28,13 +35,13 @@ class _MapScreenState extends State<MapScreen> {
       body: Stack(
         children: [
           FlutterMap(
-            mapController: _mapController,
+            mapController: _animatedMapController.mapController,
             options: MapOptions(
               initialCenter: LatLng(52.0, 19.0), // Środek Polski
               initialZoom: 6.0,
               minZoom: 4.0,
               maxZoom: 18.0,
-              
+
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
@@ -47,17 +54,17 @@ class _MapScreenState extends State<MapScreen> {
               ),
 
               // User location marker + accuracy circle
-              UserLocationWidget(mapController: _mapController),
+              UserLocationWidget(mapController: _animatedMapController.mapController),
 
-              // Places markers - Add this line
-              PlacesMarkersWidget(mapController: _mapController),
+              // Places markers with smooth animations
+              PlacesMarkersWidget(mapController: _animatedMapController),
 
               // TODO: add polyline layer for routes here
             ],
           ),
 
           // Center-on-user button
-          CenterOnUserButton(mapController: _mapController),
+          CenterOnUserButton(mapController: _animatedMapController), // Zmieniono tutaj!
 
           // Bottom navigation bar
           const NavbarWidget(selectedIndex: 0),

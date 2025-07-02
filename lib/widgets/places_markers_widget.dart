@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/place.dart';
 import '../services/firestore_service.dart';
 import 'place_details_sheet_widget.dart';
 
 class PlacesMarkersWidget extends StatefulWidget {
-  final MapController mapController;
-  final String? cityId; // Optional: filter by city
-  final Function(Place)? onMarkerTap; // Optional: callback when marker is tapped
-  final bool enableClustering; // Enable/disable clustering
+  final AnimatedMapController mapController;
+  final String? cityId;
+  final Function(Place)? onMarkerTap;
+  final bool enableClustering;
 
   const PlacesMarkersWidget({
     Key? key,
     required this.mapController,
     this.cityId,
     this.onMarkerTap,
-    this.enableClustering = true, // Default to enabled
+    this.enableClustering = true,
   }) : super(key: key);
 
   @override
@@ -30,6 +31,9 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   bool _isLoading = true;
   String? _error;
 
+  // ID aktualnie aktywnego (klikniętego) miejsca
+  String? _activePlaceId;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +43,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   @override
   void didUpdateWidget(PlacesMarkersWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload if cityId changed
     if (oldWidget.cityId != widget.cityId) {
       _loadPlaces();
     }
@@ -52,12 +55,9 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     });
 
     try {
-      List<Place> places;
-      if (widget.cityId != null) {
-        places = await _firestoreService.getPlacesForCity(widget.cityId!);
-      } else {
-        places = await _firestoreService.getAllPlaces();
-      }
+      final places = widget.cityId != null
+          ? await _firestoreService.getPlacesForCity(widget.cityId!)
+          : await _firestoreService.getAllPlaces();
 
       setState(() {
         _places = places;
@@ -73,27 +73,22 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const SizedBox.shrink(); // Don't show anything while loading
-    }
-
-    if (_error != null) {
-      // You could show an error indicator here if needed
+    if (_isLoading || _error != null) {
       return const SizedBox.shrink();
     }
+
+    final markers = _places.map((place) => _buildMarker(place)).toList();
 
     if (widget.enableClustering) {
       return MarkerClusterLayerWidget(
         options: MarkerClusterLayerOptions(
           maxClusterRadius: 45,
           size: const Size(40, 40),
-          markers: _places.map((place) => _buildMarker(place)).toList(),
+          markers: markers,
           showPolygon: false,
           onClusterTap: (cluster) {
-            // Handle cluster tap - zoom to fit all markers in cluster
-            final group = cluster.markers;
-            final bounds = _calculateBounds(group);
-            widget.mapController.fitCamera(
+            final bounds = _calculateBounds(cluster.markers);
+            widget.mapController.mapController.fitCamera(
               CameraFit.bounds(
                 bounds: bounds,
                 padding: const EdgeInsets.all(50),
@@ -101,76 +96,87 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
               ),
             );
           },
-          builder: (context, markers) {
-            return _buildClusterMarker(markers);
+          // nowy builder bez obramowania i z idealnie wycentrowanym tekstem
+          builder: (context, clusterMarkers) {
+            return Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.red[700],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                clusterMarkers.length.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            );
           },
         ),
       );
     } else {
-      // Fallback to regular MarkerLayer if clustering is disabled
-      return MarkerLayer(
-        markers: _places.map((place) => _buildMarker(place)).toList(),
-      );
+      return MarkerLayer(markers: markers);
     }
   }
 
   Marker _buildMarker(Place place) {
+    // Rozmiary Twojej ikonki w pikselach / punktach:
+    const double w = 40, h = 48;
+
+    // Sprawdzamy czy ten place jest aktywny
+    final bool isActive = place.id == _activePlaceId;
+
     return Marker(
       point: LatLng(place.lat, place.lng),
-      width: 40,
-      height: 40,
+      width: w,
+      height: h,
+      // Use alignment instead of anchorPos for positioning
+      alignment: Alignment.bottomCenter,
       child: GestureDetector(
-        onTap: () {
-          if (widget.onMarkerTap != null) {
-            widget.onMarkerTap!(place);
-          } else {
-            _showDefaultPlaceDetails(place);
-          }
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.red,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.place,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
+        onTap: () async {
+          // ustawiamy na aktywny
+          setState(() => _activePlaceId = place.id);
 
-  Widget _buildClusterMarker(List<Marker> markers) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.blue,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          markers.length.toString(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
+          // wyśrodkuj mapę płynnie z animacją
+          widget.mapController.animateTo(
+            dest: LatLng(place.lat, place.lng),
+            zoom: widget.mapController.mapController.camera.zoom,
+          );
+
+          // otwieramy BottomSheet (czeka, aż zostanie zamknięty)
+          await showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => PlaceDetailsSheet(
+              place: place,
+              mapController: widget.mapController.mapController,
+            ),
+          );
+
+          // po zamknięciu przywracamy stan
+          setState(() => _activePlaceId = null);
+        },
+        // animacja skalowania przy aktywnym
+        child: AnimatedScale(
+          scale: isActive ? 1.2 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Image.asset(
+            isActive ? 'assets/marker_active.png' : 'assets/marker.png',
+            width: w,
+            height: h,
+            fit: BoxFit.contain,
           ),
         ),
       ),
@@ -178,15 +184,13 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   }
 
   LatLngBounds _calculateBounds(List<Marker> markers) {
-    double minLat = double.infinity;
-    double maxLat = double.negativeInfinity;
-    double minLng = double.infinity;
-    double maxLng = double.negativeInfinity;
+    double minLat = double.infinity,
+        maxLat = double.negativeInfinity,
+        minLng = double.infinity,
+        maxLng = double.negativeInfinity;
 
-    for (final marker in markers) {
-      final lat = marker.point.latitude;
-      final lng = marker.point.longitude;
-
+    for (final m in markers) {
+      final lat = m.point.latitude, lng = m.point.longitude;
       if (lat < minLat) minLat = lat;
       if (lat > maxLat) maxLat = lat;
       if (lng < minLng) minLng = lng;
@@ -196,14 +200,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     return LatLngBounds(
       LatLng(minLat, minLng),
       LatLng(maxLat, maxLng),
-    );
-  }
-
-  void _showDefaultPlaceDetails(Place place) {
-    PlaceDetailsSheet.show(
-      context,
-      place,
-      mapController: widget.mapController,
     );
   }
 }

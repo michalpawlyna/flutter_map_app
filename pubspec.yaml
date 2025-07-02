@@ -15,6 +15,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   firebase_core: ^3.14.0
+  firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.9
   flutter_dotenv: ^5.2.1
   flutter_map: ^7.0.0
@@ -22,9 +23,13 @@ dev_dependencies:
   latlong2: ^0.9.1
   geolocator: ^14.0.1
   flutter_map_marker_cluster: ^1.4.0
+  flutter_map_animations: ^0.7.1
+  flutter_cache_manager: ^3.4.1
 
 
 flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/marker.png
+    - assets/marker_active.png
