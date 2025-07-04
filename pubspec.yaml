@@ -25,6 +25,8 @@ dev_dependencies:
   flutter_map_marker_cluster: ^1.4.0
   flutter_map_animations: ^0.7.1
   flutter_cache_manager: ^3.4.1
+  random_avatar: ^0.0.8
+  shared_preferences: ^2.5.3
 
 
 flutter:

@@ -5,56 +5,38 @@ import '../screens/profile_screen.dart';
 /// Simple bottom navigation bar with three icons.
 class NavbarWidget extends StatelessWidget {
   final int selectedIndex;
-  
-  const NavbarWidget({Key? key, this.selectedIndex = 0}) : super(key: key);
-  
-  void _onItemTapped(BuildContext context, int index) {
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MapScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-      );
-    }
-  }
-  
+  final ValueChanged<int> onTabSelected;
+
+  const NavbarWidget({Key? key, required this.selectedIndex, required this.onTabSelected}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _navItem(context, Icons.home, 0),
-            _navItem(context, Icons.search, 1),
-            _navItem(context, Icons.person, 2),
-          ],
-        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _navItem(Icons.home, 0),
+          _navItem(Icons.search, 1),
+          _navItem(Icons.person, 2),
+        ],
       ),
     );
   }
-  
-  Widget _navItem(BuildContext context, IconData icon, int index) {
+
+  Widget _navItem(IconData icon, int index) {
     final active = index == selectedIndex;
     return GestureDetector(
-      onTap: () => _onItemTapped(context, index),
+      onTap: () => onTabSelected(index),
       child: Container(
         padding: EdgeInsets.all(8),
         decoration: active

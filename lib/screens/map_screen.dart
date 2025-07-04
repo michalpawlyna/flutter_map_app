@@ -65,9 +65,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
           // Center-on-user button
           CenterOnUserButton(mapController: _animatedMapController), // Zmieniono tutaj!
-
-          // Bottom navigation bar
-          const NavbarWidget(selectedIndex: 0),
         ],
       ),
     );
