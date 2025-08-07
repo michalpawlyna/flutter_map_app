@@ -5,7 +5,10 @@ import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/place.dart';
 import '../services/firestore_service.dart';
+import '../services/location_service.dart';
+import '../services/route_service.dart';
 import 'place_details_sheet_widget.dart';
+import 'route_polyline_widget.dart';
 
 class PlacesMarkersWidget extends StatefulWidget {
   final AnimatedMapController mapController;
@@ -27,6 +30,8 @@ class PlacesMarkersWidget extends StatefulWidget {
 
 class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   final FirestoreService _firestoreService = FirestoreService();
+  final RouteService _routeService = RouteService();
+  Polyline? _routePolyline;
   List<Place> _places = [];
   bool _isLoading = true;
   String? _error;
@@ -78,9 +83,10 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     }
 
     final markers = _places.map((place) => _buildMarker(place)).toList();
+    final List<Widget> layers = [];
 
     if (widget.enableClustering) {
-      return MarkerClusterLayerWidget(
+      layers.add(MarkerClusterLayerWidget(
         options: MarkerClusterLayerOptions(
           maxClusterRadius: 45,
           size: const Size(40, 40),
@@ -124,10 +130,15 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
             );
           },
         ),
-      );
+      ));
     } else {
-      return MarkerLayer(markers: markers);
+      layers.add(MarkerLayer(markers: markers));
     }
+
+    // Add route polyline using the new widget
+    layers.add(RoutePolylineWidget(polyline: _routePolyline));
+
+    return Stack(children: layers);
   }
 
   Marker _buildMarker(Place place) {
@@ -162,6 +173,31 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
             builder: (context) => PlaceDetailsSheet(
               place: place,
               mapController: widget.mapController.mapController,
+              onNavigate: (selectedPlace) async {
+                try {
+                  final userPos = await LocationService().getCurrentLocation();
+                  final userLatLng = LatLng(userPos.latitude, userPos.longitude);
+                  final polyline = await _routeService.getWalkingRoute(
+                    userLatLng,
+                    LatLng(selectedPlace.lat, selectedPlace.lng),
+                  );
+                  setState(() {
+                    _routePolyline = polyline;
+                  });
+                  // Optionally, fit map to route
+                  widget.mapController.mapController.fitCamera(
+                    CameraFit.bounds(
+                      bounds: LatLngBounds.fromPoints(polyline.points),
+                      padding: const EdgeInsets.all(40),
+                    ),
+                  );
+                  Navigator.of(context).pop(); // Close the sheet
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Błąd trasy: $e')),
+                  );
+                }
+              },
             ),
           );
 

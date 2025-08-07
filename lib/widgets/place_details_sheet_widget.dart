@@ -3,15 +3,24 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/place.dart';
 
-class PlaceDetailsSheet extends StatelessWidget {
+class PlaceDetailsSheet extends StatefulWidget {
   final Place place;
   final MapController? mapController;
+  final Future<void> Function(Place)? onNavigate;
 
   const PlaceDetailsSheet({
     Key? key,
     required this.place,
     this.mapController,
+    this.onNavigate,
   }) : super(key: key);
+
+  @override
+  State<PlaceDetailsSheet> createState() => _PlaceDetailsSheetState();
+}
+
+class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +74,7 @@ class PlaceDetailsSheet extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      place.name,
+                      widget.place.name,
                       style: const TextStyle(
                         fontSize: 20, // większy rozmiar, np. 20
                         fontWeight: FontWeight.bold,
@@ -73,9 +82,9 @@ class PlaceDetailsSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    if (place.address.isNotEmpty)
+                    if (widget.place.address.isNotEmpty)
                       Text(
-                        place.address,
+                        widget.place.address,
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
@@ -98,9 +107,9 @@ class PlaceDetailsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // Description
-          if (place.desc.isNotEmpty)
+          if (widget.place.desc.isNotEmpty)
             Text(
-              place.desc,
+              widget.place.desc,
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black54,
@@ -112,11 +121,26 @@ class PlaceDetailsSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                // TODO: implement navigation
-              },
-              icon: const Icon(Icons.navigation),
-              label: const Text('Nawiguj'),
+              onPressed: _loading
+                  ? null
+                  : () async {
+                      if (widget.onNavigate != null) {
+                        setState(() => _loading = true);
+                        await widget.onNavigate!(widget.place);
+                        if (mounted) setState(() => _loading = false);
+                      }
+                    },
+              icon: _loading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : const Icon(Icons.navigation),
+              label: Text(_loading ? 'Tworzenie trasy...' : 'Nawiguj'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
@@ -140,6 +164,7 @@ class PlaceDetailsSheet extends StatelessWidget {
     BuildContext context,
     Place place, {
     MapController? mapController,
+    Future<void> Function(Place)? onNavigate,
   }) {
     showModalBottomSheet(
       context: context,
@@ -148,6 +173,7 @@ class PlaceDetailsSheet extends StatelessWidget {
       builder: (context) => PlaceDetailsSheet(
         place: place,
         mapController: mapController,
+        onNavigate: onNavigate,
       ),
     );
   }

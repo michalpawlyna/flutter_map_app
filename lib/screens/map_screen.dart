@@ -58,8 +58,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
               // Places markers with smooth animations
               PlacesMarkersWidget(mapController: _animatedMapController),
-
-              // TODO: add polyline layer for routes here
             ],
           ),
 

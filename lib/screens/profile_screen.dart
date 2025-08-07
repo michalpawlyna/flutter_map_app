@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:random_avatar/random_avatar.dart';
 import '../services/auth_service.dart';
-import '../widgets/navbar_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -17,86 +15,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _password = '';
   bool _isRegisterMode = false;
   bool _loading = false;
-  String? _currentAvatarSeed;
-  String? _tempAvatarSeed;
-  bool _hasUnsavedChanges = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrentAvatarSeed();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadCurrentAvatarSeed(); // ensure avatar is always reloaded when screen is revisited
-  }
-
-  Future<void> _loadCurrentAvatarSeed() async {
-    if (_authService.currentUser != null) {
-      final seed = await _authService.getCurrentUserAvatarSeed();
-      setState(() {
-        _currentAvatarSeed = seed;
-        _tempAvatarSeed = seed;
-      });
-    }
-  }
-
-  void _generateNewAvatar() {
-    setState(() {
-      _tempAvatarSeed = _authService.generateRandomAvatarSeed();
-      _hasUnsavedChanges = true;
-    });
-  }
-
-  Future<void> _saveAvatarChanges() async {
-    if (_tempAvatarSeed != null) {
-      await _authService.saveCurrentUserAvatarSeed(_tempAvatarSeed!);
-      setState(() {
-        _currentAvatarSeed = _tempAvatarSeed;
-        _hasUnsavedChanges = false;
-      });
-
-      // reload avatar seed in case other widgets use it
-      await _loadCurrentAvatarSeed();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar zapisany!')),
-      );
-    }
-  }
-
-  void _cancelAvatarChanges() {
-    setState(() {
-      _tempAvatarSeed = _currentAvatarSeed;
-      _hasUnsavedChanges = false;
-    });
-  }
-
-  void _toggleMode() {
-    setState(() => _isRegisterMode = !_isRegisterMode);
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    try {
-      if (_isRegisterMode) {
-        await _authService.registerWithEmail(_email, _password);
-      } else {
-        await _authService.loginWithEmail(_email, _password);
-      }
-      await _loadCurrentAvatarSeed(); // Load avatar after login/register
-      setState(() {}); // Refresh UI
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,82 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                                border: Border.all(color: Colors.grey.shade300, width: 2),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(48),
-                                child: _tempAvatarSeed != null
-                                    ? RandomAvatar(
-                                        _tempAvatarSeed!,
-                                        height: 96,
-                                        width: 96,
-                                      )
-                                    : const Icon(Icons.person, size: 96),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: _generateNewAvatar,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.casino,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        if (_hasUnsavedChanges) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: _saveAvatarChanges,
-                                icon: const Icon(Icons.save, size: 16),
-                                label: const Text('Zapisz'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              OutlinedButton.icon(
-                                onPressed: _cancelAvatarChanges,
-                                icon: const Icon(Icons.cancel, size: 16),
-                                label: const Text('Anuluj'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.grey.shade600,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+                        // Avatar section removed
                         Text(
                           'Zalogowany jako:',
                           style: TextStyle(
@@ -257,11 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ElevatedButton.icon(
                           onPressed: () async {
                             await _authService.signOut();
-                            setState(() {
-                              _currentAvatarSeed = null;
-                              _tempAvatarSeed = null;
-                              _hasUnsavedChanges = false;
-                            });
+                            setState(() {});
                           },
                           icon: const Icon(Icons.logout),
                           label: const Text('Wyloguj'),
@@ -277,5 +116,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  void _toggleMode() {
+    setState(() => _isRegisterMode = !_isRegisterMode);
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _loading = true);
+    try {
+      if (_isRegisterMode) {
+        await _authService.registerWithEmail(_email, _password);
+      } else {
+        await _authService.loginWithEmail(_email, _password);
+      }
+      setState(() {}); // Refresh UI
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 }
