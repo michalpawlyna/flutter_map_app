@@ -66,19 +66,21 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       body: Stack(
         children: [
           _getScreen(_selectedIndex),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: NavbarWidget(
-              selectedIndex: _selectedIndex,
-              onTabSelected: _onTabSelected,
+          if (!isKeyboardVisible)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: NavbarWidget(
+                selectedIndex: _selectedIndex,
+                onTabSelected: _onTabSelected,
+              ),
             ),
-          ),
         ],
       ),
     );

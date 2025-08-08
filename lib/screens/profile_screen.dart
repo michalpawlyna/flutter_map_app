@@ -20,101 +20,275 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil'),
-        automaticallyImplyLeading: false, // Remove back arrow completely if using bottom nav
+      backgroundColor: Colors.grey[50], // Light background like bottom sheet
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: user == null ? _buildAuthForm() : _buildProfileInfo(user),
+          ),
+        ),
       ),
-      body: Stack(
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 76),
-              child: user == null
-                  ? Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _isRegisterMode ? 'Rejestracja' : 'Logowanie',
-                            style: const TextStyle(fontSize: 20),
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            decoration: const InputDecoration(labelText: 'Email'),
-                            validator: (val) => val!.isEmpty ? 'Wprowadź email' : null,
-                            onChanged: (val) => _email = val,
-                          ),
-                          TextFormField(
-                            decoration: const InputDecoration(labelText: 'Hasło'),
-                            obscureText: true,
-                            validator: (val) => val!.length < 6 ? 'Min. 6 znaków' : null,
-                            onChanged: (val) => _password = val,
-                          ),
-                          const SizedBox(height: 20),
-                          _loading
-                              ? const CircularProgressIndicator()
-                              : ElevatedButton(
-                                  onPressed: _submit,
-                                  child: Text(_isRegisterMode ? 'Zarejestruj' : 'Zaloguj'),
-                                ),
-                          TextButton(
-                            onPressed: _toggleMode,
-                            child: Text(
-                              _isRegisterMode
-                                  ? 'Masz już konto? Zaloguj się'
-                                  : 'Nie masz konta? Zarejestruj się',
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Avatar section removed
-                        Text(
-                          'Zalogowany jako:',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user.email ?? '',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'ID: ${user.uid}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            await _authService.signOut();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.logout),
-                          label: const Text('Wyloguj'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade400,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
+    );
+  }
+
+  Widget _buildAuthForm() {
+  return SingleChildScrollView(
+    key: _formKey,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Logo at the top, centered
+        Center(
+          child: Column(
+            children: [
+              Image.asset(
+                'assets/logo_transparent.png',
+                width: 160,
+                height: 160,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        
+        // Header title
+        Row(
+          children: [
+            Text(
+              _isRegisterMode ? 'Rejestracja' : 'Logowanie',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        
+        // Email field
+        const Text(
+          'Email',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          decoration: InputDecoration(
+            hintText: 'Wprowadź adres email',
+            hintStyle: const TextStyle(color: Colors.black54),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.black),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          validator: (val) => val!.isEmpty ? 'Wprowadź email' : null,
+          onChanged: (val) => _email = val,
+        ),
+        const SizedBox(height: 16),
+        
+        // Password field
+        const Text(
+          'Hasło',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          decoration: InputDecoration(
+            hintText: 'Wprowadź hasło',
+            hintStyle: const TextStyle(color: Colors.black54),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.black),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          obscureText: true,
+          validator: (val) => val!.length < 6 ? 'Min. 6 znaków' : null,
+          onChanged: (val) => _password = val,
+        ),
+        const SizedBox(height: 24),
+        
+        // Submit button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _loading ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: _loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
                     ),
+                  )
+                : Text(_isRegisterMode ? 'Zarejestruj' : 'Zaloguj'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Toggle mode button
+        Center(
+          child: TextButton(
+            onPressed: _toggleMode,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black54,
+            ),
+            child: Text(
+              _isRegisterMode
+                  ? 'Masz już konto? Zaloguj się'
+                  : 'Nie masz konta? Zarejestruj się',
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.4,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildProfileInfo(user) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with icon
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.green[100],
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Twój profil',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        
+        // User info section
+        const Text(
+          'Informacje o koncie',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Zalogowany jako: ${user.email ?? ''}',
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'ID: ${user.uid}',
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Logout button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await _authService.signOut();
+              setState(() {});
+            },
+            icon: const Icon(Icons.logout),
+            label: const Text('Wyloguj'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[400],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
