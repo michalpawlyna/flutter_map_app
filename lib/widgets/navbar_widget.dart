@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../screens/map_screen.dart';
-import '../screens/profile_screen.dart';
 
 /// Simple bottom navigation bar with three icons.
+/// Keeps the same API: selectedIndex + onTabSelected.
 class NavbarWidget extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
 
-  const NavbarWidget({Key? key, required this.selectedIndex, required this.onTabSelected}) : super(key: key);
+  const NavbarWidget({Key? key, required this.selectedIndex, required this.onTabSelected})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class NavbarWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTabSelected(index),
       child: Container(
-        padding: EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8),
         decoration: active
             ? BoxDecoration(
                 color: Colors.grey.shade200,

@@ -8,7 +8,6 @@ import '../services/firestore_service.dart';
 import '../services/location_service.dart';
 import '../services/route_service.dart';
 import 'place_details_sheet_widget.dart';
-import 'route_polyline_widget.dart';
 
 class PlacesMarkersWidget extends StatefulWidget {
   final AnimatedMapController mapController;
@@ -16,12 +15,17 @@ class PlacesMarkersWidget extends StatefulWidget {
   final Function(Place)? onMarkerTap;
   final bool enableClustering;
 
+  /// Callback wywoływany gdy widget wygeneruje trasę (RouteResult).
+  /// MapScreen powinien go obsłużyć i narysować trasę globalnie.
+  final Function(RouteResult)? onRouteGenerated;
+
   const PlacesMarkersWidget({
     Key? key,
     required this.mapController,
     this.cityId,
     this.onMarkerTap,
     this.enableClustering = true,
+    this.onRouteGenerated,
   }) : super(key: key);
 
   @override
@@ -31,7 +35,7 @@ class PlacesMarkersWidget extends StatefulWidget {
 class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   final FirestoreService _firestoreService = FirestoreService();
   final RouteService _routeService = RouteService();
-  Polyline? _routePolyline;
+
   List<Place> _places = [];
   bool _isLoading = true;
   String? _error;
@@ -102,7 +106,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
               ),
             );
           },
-          // nowy builder bez obramowania i z idealnie wycentrowanym tekstem
           builder: (context, clusterMarkers) {
             return Container(
               width: 40,
@@ -135,37 +138,28 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
       layers.add(MarkerLayer(markers: markers));
     }
 
-    // Add route polyline using the new widget
-    layers.add(RoutePolylineWidget(polyline: _routePolyline));
-
     return Stack(children: layers);
   }
 
   Marker _buildMarker(Place place) {
-    // Rozmiary Twojej ikonki w pikselach / punktach:
     const double w = 40, h = 48;
-
-    // Sprawdzamy czy ten place jest aktywny
     final bool isActive = place.id == _activePlaceId;
 
     return Marker(
       point: LatLng(place.lat, place.lng),
       width: w,
       height: h,
-      // Use alignment instead of anchorPos for positioning
-      alignment: Alignment.bottomCenter,
+      alignment: Alignment.topCenter,
       child: GestureDetector(
         onTap: () async {
-          // ustawiamy na aktywny
           setState(() => _activePlaceId = place.id);
 
-          // wyśrodkuj mapę płynnie z animacją
           widget.mapController.animateTo(
             dest: LatLng(place.lat, place.lng),
             zoom: widget.mapController.mapController.camera.zoom,
           );
 
-          // otwieramy BottomSheet (czeka, aż zostanie zamknięty)
+          // otwieramy bottom sheet
           await showModalBottomSheet(
             context: context,
             isScrollControlled: true,
@@ -177,21 +171,27 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                 try {
                   final userPos = await LocationService().getCurrentLocation();
                   final userLatLng = LatLng(userPos.latitude, userPos.longitude);
-                  final polyline = await _routeService.getWalkingRoute(
+
+                  // Pobieramy trasę (RouteResult)
+                  final routeResult = await _routeService.getWalkingRoute(
                     userLatLng,
                     LatLng(selectedPlace.lat, selectedPlace.lng),
                   );
-                  setState(() {
-                    _routePolyline = polyline;
-                  });
-                  // Optionally, fit map to route
-                  widget.mapController.mapController.fitCamera(
-                    CameraFit.bounds(
-                      bounds: LatLngBounds.fromPoints(polyline.points),
-                      padding: const EdgeInsets.all(40),
-                    ),
-                  );
-                  Navigator.of(context).pop(); // Close the sheet
+
+                  // Powiadamiamy rodzica aby narysował trasę (nie rysujemy jej tutaj)
+                  widget.onRouteGenerated?.call(routeResult);
+
+                  // Opcjonalnie dopasowujemy kamerę tutaj:
+                  if (routeResult.points.isNotEmpty) {
+                    widget.mapController.mapController.fitCamera(
+                      CameraFit.bounds(
+                        bounds: LatLngBounds.fromPoints(routeResult.points),
+                        padding: const EdgeInsets.all(40),
+                      ),
+                    );
+                  }
+
+                  Navigator.of(context).pop(); // close the sheet
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Błąd trasy: $e')),
@@ -201,10 +201,8 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
             ),
           );
 
-          // po zamknięciu przywracamy stan
           setState(() => _activePlaceId = null);
         },
-        // animacja skalowania przy aktywnym
         child: AnimatedScale(
           scale: isActive ? 1.2 : 1.0,
           duration: const Duration(milliseconds: 200),

@@ -1,134 +1,94 @@
+// lib/widgets/user_location_widget.dart
+
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import '../services/location_service.dart';
-import 'dart:async';
+import 'package:latlong2/latlong.dart';
 
-class UserLocationWidget extends StatefulWidget {
-  final MapController mapController;
-  final double accuracyRadius;
-  final bool autoCenter; // Whether to auto-center map on location updates
-  
+class UserLocationWidget extends StatelessWidget {
+  /// Strumień pozycji użytkownika, dostarczany z zewnątrz.
+  final Stream<Position> positionStream;
+
+  /// Minimalny promień rysowanego kręgu (jeśli GPS zwróci mniejszą wartość).
+  final double minAccuracyRadius;
+
   const UserLocationWidget({
-    required this.mapController,
-    this.accuracyRadius = 25.0,
-    this.autoCenter = false,
+    required this.positionStream,
+    this.minAccuracyRadius = 25.0,
     Key? key,
   }) : super(key: key);
-  
-  @override
-  _UserLocationWidgetState createState() => _UserLocationWidgetState();
-}
 
-class _UserLocationWidgetState extends State<UserLocationWidget> {
-  LatLng? _position;
-  StreamSubscription<Position>? _locationSubscription;
-  
-  @override
-  void initState() {
-    super.initState();
-    _initLocation();
-  }
-  
-  Future<void> _initLocation() async {
-    try {
-      // Get initial location
-      final pos = await LocationService().getCurrentLocation();
-      setState(() {
-        _position = LatLng(pos.latitude, pos.longitude);
-      });
-      
-      if (widget.autoCenter && _position != null) {
-        widget.mapController.move(_position!, widget.mapController.camera.zoom);
-      }
-      
-      // Start continuous location updates
-      _startLocationStream();
-    } catch (e) {
-      debugPrint('Failed to get initial location: $e');
-    }
-  }
-  
-  void _startLocationStream() {
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 10, // Update when user moves 10 meters
-      timeLimit: Duration(seconds: 30), // Maximum time to wait for location
-    );
-    
-    _locationSubscription = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen(
-      (Position position) {
-        final newPosition = LatLng(position.latitude, position.longitude);
-        
-        setState(() {
-          _position = newPosition;
-        });
-        
-        // Optional: Auto-center map on location updates
-        if (widget.autoCenter) {
-          widget.mapController.move(newPosition, widget.mapController.camera.zoom);
-        }
-      },
-      onError: (error) {
-        debugPrint('Location stream error: $error');
-      },
-    );
-  }
-  
-  @override
-  void dispose() {
-    _locationSubscription?.cancel();
-    super.dispose();
-  }
-  
   @override
   Widget build(BuildContext context) {
-    if (_position == null) return const SizedBox.shrink();
-    
-    return Stack(
-      children: [
-        /// Accuracy circle
-        CircleLayer(
-          circles: [
-            CircleMarker(
-              point: _position!,
-              useRadiusInMeter: true,
-              radius: widget.accuracyRadius,
-              color: Colors.blue.withOpacity(0.2),
-            ),
-          ],
-        ),
-        /// User position dot
-        MarkerLayer(
-          markers: [
-            Marker(
-              point: _position!,
-              width: 20,
-              height: 20,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 3,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+    // Używamy StreamBuilder, który automatycznie nasłuchuje na strumieniu
+    // i przebudowuje UI, gdy pojawią się nowe dane.
+    return StreamBuilder<Position>(
+      stream: positionStream,
+      builder: (context, snapshot) {
+        // Jeśli nie ma jeszcze danych (lub jest błąd), nie rysuj nic.
+        // Dzięki zmianom w LocationService pierwszy event (current position)
+        // powinien nadejść szybko — wtedy marker się pojawi.
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final position = snapshot.data!;
+        final latLng = LatLng(position.latitude, position.longitude);
+        final accuracy = position.accuracy;
+        final radius = max(minAccuracyRadius, accuracy);
+
+        return Stack(
+          children: [
+            // Accuracy circle
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: latLng,
+                  useRadiusInMeter: true,
+                  radius: radius,
+                  color: Colors.blue.withOpacity(0.18),
+                  borderStrokeWidth: 1.2,
+                  borderColor: Colors.blueAccent,
                 ),
-              ),
+              ],
+            ),
+            // User marker
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: latLng,
+                  width: 36,
+                  height: 36,
+                  // DLA flutter_map >6: używamy child:, nie builder:
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.my_location,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import '../models/place.dart';
+import '../services/tts_service.dart';
 
 class PlaceDetailsSheet extends StatefulWidget {
   final Place place;
@@ -21,6 +21,30 @@ class PlaceDetailsSheet extends StatefulWidget {
 
 class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   bool _loading = false;
+  late final TtsService _tts;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = TtsService();
+  }
+
+  @override
+  void dispose() {
+    _tts.dispose();
+    super.dispose();
+  }
+
+  // <-- TU: tylko nazwa i opis, bez adresu
+  String _composeSpeechText() {
+    final b = StringBuffer();
+    b.write(widget.place.name);
+    if (widget.place.desc.isNotEmpty) {
+      b.write('. ');
+      b.write(widget.place.desc);
+    }
+    return b.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +75,8 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           ),
           // First row: icon and place info
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center, // Center align icon and text
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Colored circle with marker icon
               Container(
                 width: 40,
                 height: 40,
@@ -67,7 +90,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Place name and address
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +98,7 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                     Text(
                       widget.place.name,
                       style: const TextStyle(
-                        fontSize: 20, // większy rozmiar, np. 20
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -96,7 +118,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          // Section: About
           const Text(
             'O miejscu',
             style: TextStyle(
@@ -106,7 +127,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          // Description
           if (widget.place.desc.isNotEmpty)
             Text(
               widget.place.desc,
@@ -116,7 +136,40 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                 height: 1.4,
               ),
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // TTS Button - stylistically matching the sheet
+          SizedBox(
+            width: double.infinity,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _tts.isSpeaking,
+              builder: (context, speaking, _) {
+                return OutlinedButton.icon(
+                  onPressed: () async {
+                    final text = _composeSpeechText();
+                    await _tts.toggle(text);
+                  },
+                  icon: speaking ? const Icon(Icons.stop) : const Icon(Icons.volume_up),
+                  label: Text(speaking ? 'Zatrzymaj' : 'Odczytaj'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    side: BorderSide(color: Colors.black.withOpacity(0.08)),
+                    foregroundColor: Colors.black87,
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           // Navigate button
           SizedBox(
             width: double.infinity,

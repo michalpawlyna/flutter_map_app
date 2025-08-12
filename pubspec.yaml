@@ -27,6 +27,7 @@ dev_dependencies:
   flutter_cache_manager: ^3.4.1
   random_avatar: ^0.0.8
   shared_preferences: ^2.5.3
+  flutter_tts: ^4.2.3
 
 
 flutter:

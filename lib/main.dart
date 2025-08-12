@@ -31,6 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'Zwiedzaj Ustkę i Słupsk',
+      debugShowCheckedModeBanner: false,
       home: MainScaffold(),
     );
   }
@@ -46,17 +47,12 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
-  Widget _getScreen(int index) {
-    switch (index) {
-      case 0:
-        return const MapScreen();
-      case 2:
-        // Search tab not implemented, fallback to Profile
-        return const ProfileScreen();
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+  // Trzymamy instancje ekranów, żeby nie były rekreowane po przełączeniu
+  late final List<Widget> _screens = [
+    const MapScreen(),
+    const _SearchPlaceholder(),
+    const ProfileScreen(),
+  ];
 
   void _onTabSelected(int index) {
     setState(() {
@@ -66,11 +62,18 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // ukrywamy navbar gdy widzimy klawiaturę
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       body: Stack(
         children: [
-          _getScreen(_selectedIndex),
+          // IndexedStack zachowuje state każdego child — nie będą disposed
+          IndexedStack(
+            index: _selectedIndex,
+            children: _screens,
+          ),
+
+          // Navbar na dole
           if (!isKeyboardVisible)
             Positioned(
               left: 0,
@@ -83,6 +86,18 @@ class _MainScaffoldState extends State<MainScaffold> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Lokalny placeholder dla ekranu wyszukiwania
+class _SearchPlaceholder extends StatelessWidget {
+  const _SearchPlaceholder({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Search screen (placeholder)')),
     );
   }
 }
