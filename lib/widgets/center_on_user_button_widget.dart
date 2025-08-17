@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_map_animations/flutter_map_animations.dart'; // Importuj AnimatedMapController
+import 'package:flutter_map_animations/flutter_map_animations.dart';
 import '../services/location_service.dart';
 
 class CenterOnUserButton extends StatelessWidget {
-  final AnimatedMapController mapController; // Zmień na AnimatedMapController
+  final AnimatedMapController mapController;
   final double zoom;
 
   const CenterOnUserButton({
@@ -49,26 +49,30 @@ class CenterOnUserButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 76,
+      top: 16,
       right: 16,
-      child: GestureDetector(
-        onTap: _centerImmediately,
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1,
+      child: SafeArea(
+        child: GestureDetector(
+          onTap: _centerImmediately,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.my_location,
-            color: Colors.black,
-            size: 24,
+            child: const Icon(
+              Icons.my_location,
+              color: Colors.black,
+              size: 24,
+            ),
           ),
         ),
       ),

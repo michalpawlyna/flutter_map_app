@@ -86,7 +86,7 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                 ),
                 child: const Icon(
                   Icons.location_on,
-                  color: Colors.red,
+                  color: Color(0xFFF44336),
                 ),
               ),
               const SizedBox(width: 12),

@@ -18,9 +18,15 @@ import '../services/proximity_service.dart';
 
 import '../services/route_service.dart';
 import '../widgets/route_polyline_widget.dart';
+import '../widgets/route_info_widget.dart';
+
+// nowy import
+import '../widgets/menu_button_widget.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({Key? key}) : super(key: key);
+  final GlobalKey<ScaffoldState> scaffoldKey;
+
+  const MapScreen({Key? key, required this.scaffoldKey}) : super(key: key);
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -92,7 +98,7 @@ class _MapScreenState extends State<MapScreen>
   }
 
   Future<void> _initProximity(Stream<Position> positionStream) async {
-    final places = await _firestoreService.getAllPlaces();
+    final places = await _firestore_service_getAllPlaces();
     if (!mounted) return;
 
     _places = places;
@@ -123,6 +129,8 @@ class _MapScreenState extends State<MapScreen>
     });
   }
 
+  Future<List<Place>> _firestore_service_getAllPlaces() => _firestoreService.getAllPlaces();
+
   @override
   void dispose() {
     _locSub?.cancel();
@@ -130,35 +138,6 @@ class _MapScreenState extends State<MapScreen>
     _tts.dispose();
     _animatedMapController.dispose();
     super.dispose();
-  }
-
-  // przykładowy fetch (możesz i tu wywoływać jeśli potrzebujesz)
-  Future<void> _fetchRouteExample(LatLng start, LatLng end) async {
-    setState(() => _routeLoading = true);
-    try {
-      final route = await RouteService().getWalkingRoute(start, end);
-      if (!mounted) return;
-      setState(() {
-        _currentRoute = route;
-      });
-    } catch (e) {
-      debugPrint('Błąd pobierania trasy: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Błąd pobierania trasy: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _routeLoading = false);
-    }
-  }
-
-  String _formatDuration(double seconds) {
-    final dur = Duration(seconds: seconds.round());
-    final hours = dur.inHours;
-    final minutes = dur.inMinutes.remainder(60);
-    if (hours > 0) return '${hours}h ${minutes}m';
-    return '${minutes} min';
   }
 
   @override
@@ -215,29 +194,23 @@ class _MapScreenState extends State<MapScreen>
                 children: [
                   TileLayer(
                     urlTemplate:
-                        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
                     subdomains: const ['a', 'b', 'c', 'd'],
                     retinaMode: RetinaMode.isHighDensity(context),
                   ),
-
-                  // trasa globalnie (MapScreen) — najpierw, będzie pod markerami i lokalizacją
                   if (_currentRoute != null)
                     RoutePolylineWidget(
                       points: _currentRoute!.points,
-                      strokeWidth: 5.0,
-                      startColor: const Color(0xFF9B7BFF),
-                      endColor: const Color(0xFFFD4A9A),
+                      strokeWidth: 4.0,
+                      startColor: const Color(0xFFFF3B30),
+                      endColor: const Color(0xFFFF9500),
                     ),
-
-                  // markery miejsc (nie rysują już trasy) — będą nad trasą
                   PlacesMarkersWidget(
                     mapController: _animatedMapController,
                     onRouteGenerated: (route) {
-                      // ustawiamy trasę i (opcjonalnie) dopasowujemy kamerę
                       setState(() {
                         _currentRoute = route;
                       });
-
                       if (route.points.isNotEmpty) {
                         _animatedMapController.mapController.fitCamera(
                           CameraFit.bounds(
@@ -248,67 +221,19 @@ class _MapScreenState extends State<MapScreen>
                       }
                     },
                   ),
-
-                  // user location — na samej górze, żeby zawsze było widoczne
                   UserLocationWidget(positionStream: _positionStream),
                 ],
               ),
-
               CenterOnUserButton(mapController: _animatedMapController),
-
-              if (_currentRoute != null)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 80,
-                  child: Card(
-                    color: Colors.black.withOpacity(0.6),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${(_currentRoute!.distanceMeters / 1000).toStringAsFixed(2)} km',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          Text(
-                            _formatDuration(_currentRoute!.durationSeconds),
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _currentRoute = null;
-                              });
-                            },
-                            child: const Text('Usuń'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: FloatingActionButton(
-                  onPressed: () {
-                    if (_initialPosition != null && _places.isNotEmpty) {
-                      final start = LatLng(
-                          _initialPosition!.latitude, _initialPosition!.longitude);
-                      final place = _places.first;
-                      final end = LatLng(place.lat, place.lng);
-                      _fetchRouteExample(start, end);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Brak pozycji lub miejsc do testu')),
-                      );
-                    }
-                  },
-                  child: _routeLoading ? const CircularProgressIndicator() : const Icon(Icons.directions),
-                ),
+              MenuButton(scaffoldKey: widget.scaffoldKey),
+              RouteInfoWidget(
+                route: _currentRoute,
+                //loading: _routeLoading,
+                onClear: () {
+                  setState(() {
+                    _currentRoute = null;
+                  });
+                },
               ),
             ],
           ),

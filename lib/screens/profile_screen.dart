@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  final VoidCallback? onBack;
+
+  const ProfileScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -25,6 +27,17 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     super.build(context); // dla AutomaticKeepAliveClientMixin
     final user = _authService.currentUser;
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
+          tooltip: 'Powrót',
+        ),
+        title: const Text('Profil'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
       backgroundColor: Colors.grey[50],
       body: Center(
         child: SingleChildScrollView(

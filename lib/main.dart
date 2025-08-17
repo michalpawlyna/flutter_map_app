@@ -3,9 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'screens/map_screen.dart';
 import 'screens/profile_screen.dart';
-import 'widgets/navbar_widget.dart';
+import 'screens/settings_screen.dart';
+import 'services/auth_service.dart';
+import 'widgets/app_drawer.dart'; // <- nowy import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,59 +48,28 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  // Trzymamy instancje ekranów, żeby nie były rekreowane po przełączeniu
+  final AuthService _authService = AuthService();
+
   late final List<Widget> _screens = [
-    const MapScreen(),
-    const _SearchPlaceholder(),
-    const ProfileScreen(),
+    MapScreen(scaffoldKey: _scaffoldKey),
+    ProfileScreen(onBack: () => setState(() => _selectedIndex = 0)),
   ];
 
-  void _onTabSelected(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    // ukrywamy navbar gdy widzimy klawiaturę
-    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
-      body: Stack(
-        children: [
-          // IndexedStack zachowuje state każdego child — nie będą disposed
-          IndexedStack(
-            index: _selectedIndex,
-            children: _screens,
-          ),
-
-          // Navbar na dole
-          if (!isKeyboardVisible)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: NavbarWidget(
-                selectedIndex: _selectedIndex,
-                onTabSelected: _onTabSelected,
-              ),
-            ),
-        ],
+      key: _scaffoldKey,
+      drawer: AppDrawer(
+        authService: _authService,
+        onSelect: (index) => setState(() => _selectedIndex = index),
       ),
-    );
-  }
-}
-
-/// Lokalny placeholder dla ekranu wyszukiwania
-class _SearchPlaceholder extends StatelessWidget {
-  const _SearchPlaceholder({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Search screen (placeholder)')),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
     );
   }
 }

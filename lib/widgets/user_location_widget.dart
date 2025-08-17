@@ -41,7 +41,7 @@ class UserLocationWidget extends StatelessWidget {
 
         return Stack(
           children: [
-            // Accuracy circle
+            // Accuracy circle (unchanged)
             CircleLayer(
               circles: [
                 CircleMarker(
@@ -49,38 +49,21 @@ class UserLocationWidget extends StatelessWidget {
                   useRadiusInMeter: true,
                   radius: radius,
                   color: Colors.blue.withOpacity(0.18),
-                  borderStrokeWidth: 1.2,
-                  borderColor: Colors.blueAccent,
                 ),
               ],
             ),
-            // User marker
+            // User marker (changed to a simple blue dot)
             MarkerLayer(
               markers: [
                 Marker(
                   point: latLng,
-                  width: 36,
-                  height: 36,
+                  width: 16,
+                  height: 16,
                   // DLA flutter_map >6: używamy child:, nie builder:
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.blue,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.my_location,
-                        size: 16,
-                        color: Colors.white,
-                      ),
                     ),
                   ),
                 ),
