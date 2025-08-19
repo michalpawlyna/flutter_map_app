@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -11,7 +12,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveClientMixin {
-  // KEEPALIVE
   @override
   bool get wantKeepAlive => true;
 
@@ -24,8 +24,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // dla AutomaticKeepAliveClientMixin
-    final user = _authService.currentUser;
+    super.build(context);
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -56,7 +56,30 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
               ],
             ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: user == null ? _buildAuthForm() : _buildProfileInfo(user),
+
+            // StreamBuilder + AnimatedSwitcher -> płynne przejście bez migania
+            child: StreamBuilder<User?>(
+              stream: _authService.authStateChanges,
+              builder: (context, snapshot) {
+                // Jeżeli strumień jeszcze "waiting", spróbuj użyć currentUser by uniknąć pustego stanu
+                final user = snapshot.data ?? _authService.currentUser;
+
+                // Zamiast pokazywać spinner przy krótkim oczekiwaniu, pokazujemy poprzedni widok
+                // lub od razu profil jeśli currentUser już jest ustawiony.
+                final Widget content = user == null ? _buildAuthForm() : _buildProfileInfo(user);
+
+                // AnimatedSwitcher doda płynne przejście (fade) między formularzem a profilem
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeInOut,
+                  switchOutCurve: Curves.easeInOut,
+                  child: Container(
+                    key: ValueKey(user?.uid ?? 'auth'), // klucz zmienia się przy edencie user/null
+                    child: content,
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -280,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
               setState(() => _loading = true);
               try {
                 await _authService.signOut();
-                setState(() {});
+                // Po signOut strumień authStateChanges wypuści null i AnimatedSwitcher zadziała.
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Błąd podczas wylogowywania: ${e.toString()}')),
@@ -332,7 +355,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
       } else {
         await _authService.loginWithEmail(_email, _password);
       }
-      setState(() {});
+      // UWAGA: nie wywołujemy setState() tu celu wymuszenia rebuild — strumień authStateChanges
+      // przebuduje widget i AnimatedSwitcher zajmie się płynnym przejściem.
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),

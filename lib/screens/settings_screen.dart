@@ -6,6 +6,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Ustawienia')),
-        body: const Center(child: Text('Ustawienia — placeholder')),
+        body: const Center(child: Text('Ustawienia-TODO Screen')),
       );
 }
