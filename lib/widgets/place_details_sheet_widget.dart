@@ -138,76 +138,78 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             ),
           const SizedBox(height: 20),
 
-          // TTS Button - stylistically matching the sheet
-          SizedBox(
-            width: double.infinity,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _tts.isSpeaking,
-              builder: (context, speaking, _) {
-                return OutlinedButton.icon(
-                  onPressed: () async {
-                    final text = _composeSpeechText();
-                    await _tts.toggle(text);
+          // Nowy wiersz: mały przycisk TTS po lewej (tylko ikonka), większy przycisk Nawiguj po prawej
+          Row(
+            children: [
+              // mały kwadratowy przycisk TTS (ikonka tylko)
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: _tts.isSpeaking,
+                  builder: (context, speaking, _) {
+                    return OutlinedButton(
+                      onPressed: () async {
+                        final text = _composeSpeechText();
+                        await _tts.toggle(text);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        side: BorderSide(color: Colors.black.withOpacity(0.08)),
+                        backgroundColor: Colors.grey.shade100,
+                        foregroundColor: Colors.black87,
+                      ),
+                      child: Icon(speaking ? Icons.stop : Icons.volume_up),
+                    );
                   },
-                  icon: speaking ? const Icon(Icons.stop) : const Icon(Icons.volume_up),
-                  label: Text(speaking ? 'Zatrzymaj' : 'Odczytaj'),
-                  style: OutlinedButton.styleFrom(
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // przycisk Nawiguj (większy, rozciągający się)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () async {
+                          if (widget.onNavigate != null) {
+                            setState(() => _loading = true);
+                            await widget.onNavigate!(widget.place);
+                            if (mounted) setState(() => _loading = false);
+                          }
+                        },
+                  icon: _loading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Icon(Icons.navigation),
+                  label: Text(_loading ? 'Tworzenie trasy...' : 'Nawiguj'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    side: BorderSide(color: Colors.black.withOpacity(0.08)),
-                    foregroundColor: Colors.black87,
                     textStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Navigate button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _loading
-                  ? null
-                  : () async {
-                      if (widget.onNavigate != null) {
-                        setState(() => _loading = true);
-                        await widget.onNavigate!(widget.place);
-                        if (mounted) setState(() => _loading = false);
-                      }
-                    },
-              icon: _loading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : const Icon(Icons.navigation),
-              label: Text(_loading ? 'Tworzenie trasy...' : 'Nawiguj'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
+            ],
           ),
+          const SizedBox(height: 8),
         ],
       ),
     );

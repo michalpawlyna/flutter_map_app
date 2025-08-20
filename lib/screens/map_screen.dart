@@ -23,6 +23,9 @@ import '../widgets/route_info_widget.dart';
 // nowy import
 import '../widgets/menu_button_widget.dart';
 
+// import ekranu ładowania (zakładam, że plik w tym samym katalogu co ten)
+import 'loading_screen.dart';
+
 class MapScreen extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
 
@@ -54,6 +57,9 @@ class _MapScreenState extends State<MapScreen>
 
   RouteResult? _currentRoute;
   bool _routeLoading = false;
+
+  // nowe pole: nazwa docelowego miejsca związana z aktualną trasą
+  String? _destinationName;
 
   @override
   void initState() {
@@ -147,18 +153,8 @@ class _MapScreenState extends State<MapScreen>
       future: _initializationFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text("Inicjalizacja mapy i lokalizacji..."),
-                ],
-              ),
-            ),
-          );
+          // Zastąpiono statyczny ekran ładowania własnym LoadingScreen
+          return const LoadingScreen();
         }
 
         if (snapshot.hasError) {
@@ -207,9 +203,11 @@ class _MapScreenState extends State<MapScreen>
                     ),
                   PlacesMarkersWidget(
                     mapController: _animatedMapController,
-                    onRouteGenerated: (route) {
+                    onRouteGenerated: (route, place) {
                       setState(() {
                         _currentRoute = route;
+                        // ustawiamy nazwę miejsca przekazanego przez widget
+                        _destinationName = place?.name;
                       });
                       if (route.points.isNotEmpty) {
                         _animatedMapController.mapController.fitCamera(
@@ -228,10 +226,11 @@ class _MapScreenState extends State<MapScreen>
               MenuButton(scaffoldKey: widget.scaffoldKey),
               RouteInfoWidget(
                 route: _currentRoute,
-                //loading: _routeLoading,
+                destinationName: _destinationName,
                 onClear: () {
                   setState(() {
                     _currentRoute = null;
+                    _destinationName = null;
                   });
                 },
               ),

@@ -16,8 +16,8 @@ class PlacesMarkersWidget extends StatefulWidget {
   final bool enableClustering;
 
   /// Callback wywoływany gdy widget wygeneruje trasę (RouteResult).
-  /// MapScreen powinien go obsłużyć i narysować trasę globalnie.
-  final Function(RouteResult)? onRouteGenerated;
+  /// Teraz przekazywany jest także powiązany Place (może być null).
+  final void Function(RouteResult route, Place? place)? onRouteGenerated;
 
   const PlacesMarkersWidget({
     Key? key,
@@ -66,7 +66,7 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     try {
       final places = widget.cityId != null
           ? await _firestoreService.getPlacesForCity(widget.cityId!)
-          : await _firestoreService.getAllPlaces();
+          : await _firestore_service_getAllPlacesFallback();
 
       setState(() {
         _places = places;
@@ -78,6 +78,11 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
         _isLoading = false;
       });
     }
+  }
+
+  // mały wrapper na wypadek różnic w nazwie metody w FirestoreService
+  Future<List<Place>> _firestore_service_getAllPlacesFallback() {
+    return _firestoreService.getAllPlaces();
   }
 
   @override
@@ -178,8 +183,8 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                     LatLng(selectedPlace.lat, selectedPlace.lng),
                   );
 
-                  // Powiadamiamy rodzica aby narysował trasę (nie rysujemy jej tutaj)
-                  widget.onRouteGenerated?.call(routeResult);
+                  // Powiadamiamy rodzica aby narysował trasę — TERAZ przekazujemy też Place
+                  widget.onRouteGenerated?.call(routeResult, selectedPlace);
 
                   // Opcjonalnie dopasowujemy kamerę tutaj:
                   if (routeResult.points.isNotEmpty) {
