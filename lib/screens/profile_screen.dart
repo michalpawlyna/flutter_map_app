@@ -28,13 +28,13 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
 
     return Scaffold(
       appBar: AppBar(
+        // Tylko przycisk powrotu — usunięto tytuł i dekorowany box
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_sharp),
           onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
           tooltip: 'Powrót',
         ),
-        title: const Text('Profil'),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
         elevation: 0,
       ),
@@ -42,43 +42,29 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Container(
+          child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            // Usunięto dekorowany Container — zawartość wyświetlana "na środku" bez boxa
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: StreamBuilder<User?>(
+                stream: _authService.authStateChanges,
+                builder: (context, snapshot) {
+                  final user = snapshot.data ?? _authService.currentUser;
 
-            // StreamBuilder + AnimatedSwitcher -> płynne przejście bez migania
-            child: StreamBuilder<User?>(
-              stream: _authService.authStateChanges,
-              builder: (context, snapshot) {
-                // Jeżeli strumień jeszcze "waiting", spróbuj użyć currentUser by uniknąć pustego stanu
-                final user = snapshot.data ?? _authService.currentUser;
+                  final Widget content = user == null ? _buildAuthForm() : _buildProfileInfo(user);
 
-                // Zamiast pokazywać spinner przy krótkim oczekiwaniu, pokazujemy poprzedni widok
-                // lub od razu profil jeśli currentUser już jest ustawiony.
-                final Widget content = user == null ? _buildAuthForm() : _buildProfileInfo(user);
-
-                // AnimatedSwitcher doda płynne przejście (fade) między formularzem a profilem
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
-                  switchInCurve: Curves.easeInOut,
-                  switchOutCurve: Curves.easeInOut,
-                  child: Container(
-                    key: ValueKey(user?.uid ?? 'auth'), // klucz zmienia się przy edencie user/null
-                    child: content,
-                  ),
-                );
-              },
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeInOut,
+                    switchOutCurve: Curves.easeInOut,
+                    child: Container(
+                      key: ValueKey(user?.uid ?? 'auth'),
+                      child: content,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -97,7 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
             child: Column(
               children: [
                 Image.asset(
-                  'assets/logo_transparent.png',
+                  'assets/phone.png',
                   width: 160,
                   height: 160,
                   fit: BoxFit.contain,
@@ -251,6 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Usunięto zewnętrzny box — elementy pozostają, ale bez obramowania/platformy
         Row(
           children: [
             Container(
@@ -303,7 +290,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
               setState(() => _loading = true);
               try {
                 await _authService.signOut();
-                // Po signOut strumień authStateChanges wypuści null i AnimatedSwitcher zadziała.
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Błąd podczas wylogowywania: ${e.toString()}')),
@@ -355,8 +341,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
       } else {
         await _authService.loginWithEmail(_email, _password);
       }
-      // UWAGA: nie wywołujemy setState() tu celu wymuszenia rebuild — strumień authStateChanges
-      // przebuduje widget i AnimatedSwitcher zajmie się płynnym przejściem.
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
