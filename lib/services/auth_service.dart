@@ -13,7 +13,6 @@ class AuthService {
 
   // Strumień zmian stanu uwierzytelnienia
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
   User? get currentUser => _auth.currentUser;
 
   // Rejestracja + utworzenie dokumentu w Firestore (users/{uid})
@@ -36,7 +35,6 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
-
     return user;
   }
 
@@ -80,53 +78,55 @@ class AuthService {
     final newUsernameRef = _firestore.collection('usernames').doc(usernameLower);
 
     await _firestore.runTransaction((tx) async {
-      // Czy nazwa jest już zajęta?
+      // 1) WSZYSTKIE ODCZYTY NA POCZĄTKU
       final newSnap = await tx.get(newUsernameRef);
-      if (newSnap.exists) {
-        // jeśli istnieje i mapping wskazuje na tego samego usera, pozwól (nic nie rób)
-        final existingUid = newSnap.data()?['uid'] as String?;
-        if (existingUid != null && existingUid != uid) {
-          throw Exception('Ta nazwa jest już zajęta.');
-        }
-        // jeśli mapping już wskazuje na nas — to nic do roboty
-      }
-
-      // Pobierz dokument użytkownika
       final userSnap = await tx.get(usersRef);
+
       if (!userSnap.exists) {
         throw Exception('Profil użytkownika nie istnieje.');
       }
 
-      final userData = userSnap.data()!;
+      final userData = userSnap.data() as Map<String, dynamic>;
       final oldLower = (userData['usernameLower'] ?? '') as String;
 
-      // Jeśli newLower == oldLower to nic nie zmieniamy (opcjonalnie zwracamy)
+      // Jeśli newLower == oldLower to nic nie zmieniamy
       if (oldLower == usernameLower) {
         return;
       }
 
-      // Stwórz mapping username -> uid
+      DocumentReference<Map<String, dynamic>>? oldRef;
+      DocumentSnapshot<Map<String, dynamic>>? oldSnap;
+      if (oldLower.isNotEmpty && oldLower != usernameLower) {
+        oldRef = _firestore.collection('usernames').doc(oldLower);
+        oldSnap = await tx.get(oldRef);
+      }
+
+      // Sprawdź dostępność nowej nazwy
+      if (newSnap.exists) {
+        final existingUid =
+            (newSnap.data() as Map<String, dynamic>?)?['uid'] as String?;
+        if (existingUid != null && existingUid != uid) {
+          throw Exception('Ta nazwa jest już zajęta.');
+        }
+        // jeśli mapping już wskazuje na nas — przejdziemy dalej i zaktualizujemy profil
+      }
+
+      // 2) DOPIERO TERAZ ZAPISY
       tx.set(newUsernameRef, {
         'uid': uid,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Zaktualizuj profil użytkownika
       tx.update(usersRef, {
         'username': username,
         'usernameLower': usernameLower,
       });
 
-      // Usuń stare mapping jeśli istniało (i było inne niż nowe)
-      if (oldLower.isNotEmpty && oldLower != usernameLower) {
-        final oldRef = _firestore.collection('usernames').doc(oldLower);
-        // upewnij się, że stary mapping nadal wskazuje na tego usera przed usunięciem
-        final oldSnap = await tx.get(oldRef);
-        if (oldSnap.exists) {
-          final oldUid = oldSnap.data()?['uid'] as String?;
-          if (oldUid == uid) {
-            tx.delete(oldRef);
-          }
+      if (oldRef != null && oldSnap != null && oldSnap.exists) {
+        final oldUid =
+            (oldSnap.data() as Map<String, dynamic>?)?['uid'] as String?;
+        if (oldUid == uid) {
+          tx.delete(oldRef);
         }
       }
     });

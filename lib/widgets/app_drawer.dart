@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/achievements_screen.dart';
+import '../screens/login_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final AuthService authService;
@@ -30,8 +31,7 @@ class AppDrawer extends StatelessWidget {
             // większy odstęp od góry dla ładnego wyglądu
             const SizedBox(height: 28),
 
-            // Header: jeśli zalogowany -> avatar + nazwa + email (kliknięcie prowadzi do profilu)
-            // jeśli niezalogowany -> duży przycisk Logowanie / Rejestracja w miejscu headera
+            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: user != null
@@ -48,8 +48,9 @@ class AppDrawer extends StatelessWidget {
                           CircleAvatar(
                             radius: 32,
                             backgroundColor: Colors.grey[200],
-                            backgroundImage:
-                                user.photoURL != null ? NetworkImage(user.photoURL!) : null,
+                            backgroundImage: user.photoURL != null
+                                ? NetworkImage(user.photoURL!)
+                                : null,
                             child: user.photoURL == null
                                 ? const Icon(Icons.person, size: 32, color: Colors.black54)
                                 : null,
@@ -69,7 +70,7 @@ class AppDrawer extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                // email - mniejsza czcionka, szara, niepogrubiona
+                                // email
                                 Text(
                                   email,
                                   style: TextStyle(
@@ -91,15 +92,17 @@ class AppDrawer extends StatelessWidget {
                         onPressed: () {
                           Navigator.of(context).pop();
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
                           );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          textStyle: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600),
                         ),
                         child: const Text('Logowanie / Rejestracja'),
                       ),
@@ -133,7 +136,8 @@ class AppDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const AchievementsScreen()),
                       );
                     },
                   ),
@@ -151,7 +155,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
 
-            // Przyciski dolne (Wyloguj) - pokazywany tylko gdy zalogowany
+            // Przyciski dolne (Wyloguj) - tylko gdy zalogowany
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
               child: SizedBox(
@@ -178,8 +182,10 @@ class AppDrawer extends StatelessWidget {
                           foregroundColor: Colors.red[700],
                           side: BorderSide(color: Colors.red[700]!),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          textStyle: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600),
                         ),
                       )
                     : const SizedBox(height: 16),
@@ -197,7 +203,8 @@ class _DrawerItem extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
 
-  const _DrawerItem({Key? key, required this.icon, required this.title, required this.onTap})
+  const _DrawerItem(
+      {Key? key, required this.icon, required this.title, required this.onTap})
       : super(key: key);
 
   @override
@@ -222,7 +229,8 @@ class _DrawerItem extends StatelessWidget {
                 const SizedBox(width: 14),
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  style:
+                      const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
