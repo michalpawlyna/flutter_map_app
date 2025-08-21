@@ -1,3 +1,6 @@
+// profile_screen.dart
+// Zaktualizowana wersja: tytuł AppBar (Logowanie / Rejestracja / Twój profil) jest umieszczony na środku w tej samej linii co strzałka cofania.
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
@@ -26,49 +29,57 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
   Widget build(BuildContext context) {
     super.build(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        // Tylko przycisk powrotu — usunięto tytuł i dekorowany box
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_sharp),
-          onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
-          tooltip: 'Powrót',
-        ),
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      backgroundColor: Colors.grey[50],
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            // Usunięto dekorowany Container — zawartość wyświetlana "na środku" bez boxa
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: StreamBuilder<User?>(
-                stream: _authService.authStateChanges,
-                builder: (context, snapshot) {
-                  final user = snapshot.data ?? _authService.currentUser;
+    return StreamBuilder<User?>(
+      stream: _authService.authStateChanges,
+      builder: (context, snapshot) {
+        final user = snapshot.data ?? _authService.currentUser;
 
-                  final Widget content = user == null ? _buildAuthForm() : _buildProfileInfo(user);
+        final String appBarTitle;
+        if (user == null) {
+          appBarTitle = _isRegisterMode ? 'Rejestracja' : 'Logowanie';
+        } else {
+          appBarTitle = 'Mój profil';
+        }
 
-                  return AnimatedSwitcher(
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_sharp),
+              onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
+              tooltip: 'Powrót',
+            ),
+            title: Text(
+              appBarTitle,
+              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.black,
+            elevation: 0,
+          ),
+          backgroundColor: Colors.grey[50],
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 260),
                     switchInCurve: Curves.easeInOut,
                     switchOutCurve: Curves.easeInOut,
                     child: Container(
                       key: ValueKey(user?.uid ?? 'auth'),
-                      child: content,
+                      child: user == null ? _buildAuthForm() : _buildProfileInfo(user),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -93,18 +104,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 const SizedBox(height: 16),
               ],
             ),
-          ),
-          Row(
-            children: [
-              Text(
-                _isRegisterMode ? 'Rejestracja' : 'Logowanie',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 24),
           const Text(
@@ -237,7 +236,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Usunięto zewnętrzny box — elementy pozostają, ale bez obramowania/platformy
         Row(
           children: [
             Container(
