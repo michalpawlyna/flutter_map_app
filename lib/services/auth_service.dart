@@ -24,13 +24,12 @@ class AuthService {
 
     final user = creds.user;
     if (user != null) {
-      // Utworzenie minimalnego profilu w Firestore
+      // Utworzenie minimalnego profilu w Firestore (bez usernameLower)
       final usersRef = _firestore.collection('users').doc(user.uid);
       await usersRef.set({
         'uid': user.uid,
         'email': email,
         'username': '',
-        'usernameLower': '',
         'displayName': '',
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -50,12 +49,10 @@ class AuthService {
     await _auth.signOut();
   }
 
-  /// Aktualizuje nazwę użytkownika w bezpieczny sposób:
-  /// - tworzy dokument usernames/{usernameLower} (jeżeli nie istnieje)
-  /// - aktualizuje users/{uid}.username i users/{uid}.usernameLower
-  /// - usuwa stare usernames/{oldLower} mapowanie (jeśli istniało)
-  ///
-  /// Rzuca [Exception] z komunikatem gdy nazwa jest zajęta lub użytkownik nie jest zalogowany.
+  /// Prosta aktualizacja nazwy użytkownika:
+  /// - waliduje nową nazwę
+  /// - aktualizuje users/{uid}.username
+  /// Rzuca [Exception] jeśli użytkownik nie jest zalogowany lub profil nie istnieje.
   Future<void> updateUsername({
     required String newUsername,
   }) async {
@@ -66,69 +63,30 @@ class AuthService {
 
     final uid = user.uid;
     final username = newUsername.trim();
-    final usernameLower = username.toLowerCase();
 
     // prosty regex walidacji (3-30 znaków, a-z0-9._-)
     final usernameRegex = RegExp(r'^[a-z0-9._-]{3,30}$');
-    if (!usernameRegex.hasMatch(usernameLower)) {
+    if (!usernameRegex.hasMatch(username.toLowerCase())) {
       throw Exception('Nieprawidłowa nazwa (3-30 znaków, a-z0-9._-).');
     }
 
     final usersRef = _firestore.collection('users').doc(uid);
-    final newUsernameRef = _firestore.collection('usernames').doc(usernameLower);
 
     await _firestore.runTransaction((tx) async {
-      // 1) WSZYSTKIE ODCZYTY NA POCZĄTKU
-      final newSnap = await tx.get(newUsernameRef);
       final userSnap = await tx.get(usersRef);
 
       if (!userSnap.exists) {
         throw Exception('Profil użytkownika nie istnieje.');
       }
 
-      final userData = userSnap.data() as Map<String, dynamic>;
-      final oldLower = (userData['usernameLower'] ?? '') as String;
+      final currentUsername = (userSnap.data() as Map<String, dynamic>?)?['username'] as String? ?? '';
 
-      // Jeśli newLower == oldLower to nic nie zmieniamy
-      if (oldLower == usernameLower) {
-        return;
-      }
-
-      DocumentReference<Map<String, dynamic>>? oldRef;
-      DocumentSnapshot<Map<String, dynamic>>? oldSnap;
-      if (oldLower.isNotEmpty && oldLower != usernameLower) {
-        oldRef = _firestore.collection('usernames').doc(oldLower);
-        oldSnap = await tx.get(oldRef);
-      }
-
-      // Sprawdź dostępność nowej nazwy
-      if (newSnap.exists) {
-        final existingUid =
-            (newSnap.data() as Map<String, dynamic>?)?['uid'] as String?;
-        if (existingUid != null && existingUid != uid) {
-          throw Exception('Ta nazwa jest już zajęta.');
-        }
-        // jeśli mapping już wskazuje na nas — przejdziemy dalej i zaktualizujemy profil
-      }
-
-      // 2) DOPIERO TERAZ ZAPISY
-      tx.set(newUsernameRef, {
-        'uid': uid,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      // jeśli taka sama nazwa — nic nie robimy
+      if (currentUsername == username) return;
 
       tx.update(usersRef, {
         'username': username,
-        'usernameLower': usernameLower,
       });
-
-      if (oldRef != null && oldSnap != null && oldSnap.exists) {
-        final oldUid =
-            (oldSnap.data() as Map<String, dynamic>?)?['uid'] as String?;
-        if (oldUid == uid) {
-          tx.delete(oldRef);
-        }
-      }
     });
   }
 }

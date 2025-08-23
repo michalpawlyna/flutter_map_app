@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:toastification/toastification.dart';
 
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
@@ -129,8 +130,15 @@ class _MapScreenState extends State<MapScreen>
       _proximityService?.onPosition(pos);
     }, onError: (e) {
       if (mounted) {
-        final snack = SnackBar(content: Text('Błąd strumienia lokalizacji: $e'));
-        ScaffoldMessenger.of(context).showSnackBar(snack);
+        toastification.show(
+                              context: context,
+                              title: Text('Błąd strumienia lokalizacji: ${e.toString()}'),
+                              style: ToastificationStyle.flat,
+                              type: ToastificationType.error,
+                              autoCloseDuration: const Duration(seconds: 4),
+                              alignment: Alignment.bottomCenter, // <-- tutaj
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
+                            );
       }
     });
   }

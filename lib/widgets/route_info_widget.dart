@@ -204,7 +204,7 @@ class RouteInfoWidget extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: logika rozpoczęcia trasy — teraz nieaktywne
+                        // TODO: logika rozpoczęcia trasy
                       },
                       icon: const Icon(Icons.play_arrow),
                       label: const Text('Start'),
@@ -216,7 +216,7 @@ class RouteInfoWidget extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         textStyle: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

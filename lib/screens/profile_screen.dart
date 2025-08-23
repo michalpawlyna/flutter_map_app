@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:toastification/toastification.dart'; // <-- dodane
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -19,15 +20,135 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool get wantKeepAlive => true;
 
   final AuthService _authService = AuthService();
+
+  final _formKey = GlobalKey<FormState>();
+
+  TextEditingController? _displayNameController;
+  TextEditingController? _usernameController;
+
+  String _serverDisplayName = '';
+  String _serverUsername = '';
+
   bool _loading = false;
+  bool _saving = false;
+
+  // helper to ensure listeners are attached to current controllers
+  void _attachListeners() {
+    _displayNameController?.removeListener(_onControllerChanged);
+    _usernameController?.removeListener(_onControllerChanged);
+    _displayNameController?.addListener(_onControllerChanged);
+    _usernameController?.addListener(_onControllerChanged);
+  }
+
+  void _onControllerChanged() {
+    // trigger rebuild so AppBar action visibility updates
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _displayNameController?.removeListener(_onControllerChanged);
+    _usernameController?.removeListener(_onControllerChanged);
+    _displayNameController?.dispose();
+    _usernameController?.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _fieldDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.black54),
+      filled: true,
+      fillColor: Colors.grey[200],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black, width: 1),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  bool get _hasChanges {
+    final d = _displayNameController?.text.trim() ?? '';
+    final u = _usernameController?.text.trim() ?? '';
+    return (d != _serverDisplayName) || (u != _serverUsername);
+  }
+
+  Future<void> _saveChanges(String uid) async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final newDisplayName = _displayNameController!.text.trim();
+    final newUsername = _usernameController!.text.trim();
+
+    final changes = <String, dynamic>{};
+    if (newDisplayName != _serverDisplayName) changes['displayName'] = newDisplayName;
+    if (newUsername != _serverUsername) changes['username'] = newUsername;
+
+    if (changes.isEmpty) return;
+
+    setState(() => _saving = true);
+
+    try {
+      final usersRef = FirebaseFirestore.instance.collection('users').doc(uid);
+      await usersRef.update(changes);
+
+      // sync displayName with FirebaseAuth if changed (best-effort)
+      try {
+        final user = _authService.currentUser;
+        if (user != null && changes.containsKey('displayName')) {
+          await user.updateDisplayName(changes['displayName'] as String);
+        }
+      } catch (_) {}
+
+      setState(() {
+        if (changes.containsKey('displayName')) _serverDisplayName = newDisplayName;
+        if (changes.containsKey('username')) _serverUsername = newUsername;
+      });
+
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('Zapisano zmiany.'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.success,
+          autoCloseDuration: const Duration(seconds: 3),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: Text('Błąd podczas zapisu: ${e.toString()}'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.error,
+          autoCloseDuration: const Duration(seconds: 4),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
     return StreamBuilder<User?>(
       stream: _authService.authStateChanges,
-      builder: (context, snapshot) {
-        final user = snapshot.data ?? _authService.currentUser;
+      builder: (context, authSnapshot) {
+        final user = authSnapshot.data ?? _auth_service_currentUserFallback();
 
         return Scaffold(
           appBar: AppBar(
@@ -44,6 +165,31 @@ class _ProfileScreenState extends State<ProfileScreen>
             backgroundColor: Colors.transparent,
             foregroundColor: Colors.black,
             elevation: 0,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Builder(builder: (ctx) {
+                  if (user == null) return const SizedBox.shrink();
+                  final uid = user.uid;
+                  if (_saving) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+                  // show check only when there are unsaved changes
+                  if (!_hasChanges) return const SizedBox.shrink();
+                  return IconButton(
+                    icon: const Icon(Icons.check, color: Colors.black),
+                    onPressed: () => _saveChanges(uid),
+                    tooltip: 'Zapisz zmiany',
+                  );
+                }),
+              )
+            ],
           ),
           backgroundColor: Colors.grey[50],
           body: Center(
@@ -53,17 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeInOut,
-                    switchOutCurve: Curves.easeInOut,
-                    child: Container(
-                      key: ValueKey(user?.uid ?? 'auth'),
-                      child: user == null
-                          ? _buildNotLoggedIn(context)
-                          : _buildProfileInfo(user),
-                    ),
-                  ),
+                  child: user == null ? _buildNotLoggedIn(context) : _buildProfileForUser(user),
                 ),
               ),
             ),
@@ -72,6 +208,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
     );
   }
+
+  // small helper to avoid repeating _authService.currentUser inline (keeps code explicit)
+  User? _auth_service_currentUserFallback() => _authService.currentUser;
 
   Widget _buildNotLoggedIn(BuildContext context) {
     return Column(
@@ -124,17 +263,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // Widok profilu z Firestore (nasłuchiwanie users/{uid})
-  Widget _buildProfileInfo(User user) {
-    final email = user.email ?? '';
+  Widget _buildProfileForUser(User user) {
     final uid = user.uid;
+    final email = user.email ?? '';
+
     final userDocStream =
         FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: userDocStream,
       builder: (context, snapshot) {
-        // wartości domyślne
         String username = '';
         String displayName = '';
 
@@ -152,259 +290,116 @@ class _ProfileScreenState extends State<ProfileScreen>
           displayName = (data['displayName'] ?? '') as String;
         }
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.green[100],
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Twój profil',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+        // recreate controllers only when server values changed
+        if (_displayNameController == null || _serverDisplayName != displayName) {
+          _displayNameController?.removeListener(_onControllerChanged);
+          _displayNameController?.dispose();
+          _displayNameController = TextEditingController(text: displayName);
+          _serverDisplayName = displayName;
+        }
+        if (_usernameController == null || _serverUsername != username) {
+          _usernameController?.removeListener(_onControllerChanged);
+          _usernameController?.dispose();
+          _usernameController = TextEditingController(text: username);
+          _serverUsername = username;
+        }
 
-            const Text(
-              'Informacje o koncie',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
+        // attach listeners (safe to call repeatedly after recreation)
+        _attachListeners();
 
-            Text(
-              'Zalogowany jako: $email',
-              style: const TextStyle(fontSize: 14, color: Colors.black54, height: 1.4),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'ID: $uid',
-              style: const TextStyle(fontSize: 14, color: Colors.black54, height: 1.4),
-            ),
-
-            const SizedBox(height: 8),
-
-            // username z opcją edycji
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    username.isNotEmpty
-                        ? 'Nazwa użytkownika: $username'
-                        : 'Nazwa użytkownika: —',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                      height: 1.4,
+        return Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 42,
+                      backgroundColor: Colors.grey[200],
+                      child: const Icon(Icons.person, size: 44, color: Colors.black54),
                     ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _showEditUsernameDialog(username),
-                  icon: const Icon(Icons.edit, size: 20),
-                  tooltip: 'Edytuj nazwę użytkownika',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // displayName z opcją edycji/dodania
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    displayName.isNotEmpty
-                        ? 'Imię i nazwisko: $displayName'
-                        : 'Imię i nazwisko: —',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _showEditDisplayNameDialog(displayName),
-                  icon: Icon(
-                    displayName.isNotEmpty ? Icons.edit : Icons.add,
-                    size: 20,
-                  ),
-                  tooltip: displayName.isNotEmpty
-                      ? 'Edytuj imię i nazwisko'
-                      : 'Dodaj imię i nazwisko',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  setState(() => _loading = true);
-                  try {
-                    await _authService.signOut();
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Błąd podczas wylogowywania: ${e.toString()}',
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: InkWell(
+                        onTap: () {
+                          // zamieniono SnackBar na toastification (type: info)
+                          toastification.show(
+                            context: context,
+                            title: const Text('Zmienianie avatara - funkcja w przygotowaniu.'),
+                            style: ToastificationStyle.flat,
+                            type: ToastificationType.info,
+                            autoCloseDuration: const Duration(seconds: 3),
+                            alignment: Alignment.bottomCenter,
+                            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.edit,
+                            size: 18,
+                            color: Colors.black54,
                           ),
                         ),
-                      );
-                    }
-                  } finally {
-                    if (mounted) setState(() => _loading = false);
-                  }
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Wyloguj'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[400],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              const SizedBox(height: 18),
 
-  // Dialog do edycji username
-  void _showEditUsernameDialog(String currentUsername) {
-    final _controller = TextEditingController(text: currentUsername);
-    final _dialogFormKey = GlobalKey<FormState>();
-    bool _saving = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Zmień nazwę użytkownika'),
-            content: Form(
-              key: _dialogFormKey,
-              child: TextFormField(
-                controller: _controller,
-                decoration: const InputDecoration(
-                  hintText: 'nowa_nazwa',
-                  helperText: '3-30 znaków: a-z, 0-9, . _ -',
+              const Text(
+                'E-mail',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
-                validator: (val) {
-                  final v = (val ?? '').trim().toLowerCase();
-                  final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
-                  if (v.isEmpty) return 'Wprowadź nazwę';
-                  if (!regex.hasMatch(v)) return 'Nieprawidłowa nazwa';
-                  return null;
-                },
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: _saving ? null : () => Navigator.of(context).pop(),
-                child: const Text('Anuluj'),
-              ),
-              ElevatedButton(
-                onPressed: _saving
-                    ? null
-                    : () async {
-                        if (!(_dialogFormKey.currentState?.validate() ?? false)) {
-                          return;
-                        }
-                        final newUsername = _controller.text.trim();
-                        setStateDialog(() => _saving = true);
-                        try {
-                          await AuthService().updateUsername(newUsername: newUsername);
-                          if (mounted) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Nazwa użytkownika zaktualizowana.'),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          final msg = e.toString();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(content: Text(msg)));
-                          }
-                        } finally {
-                          setStateDialog(() => _saving = false);
-                        }
-                      },
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Zapisz'),
-              ),
-            ],
-          );
-        });
-      },
-    );
-  }
-
-  // Dialog do edycji / dodania displayName
-  void _showEditDisplayNameDialog(String currentDisplayName) {
-    final _controller = TextEditingController(text: currentDisplayName);
-    final _dialogFormKey = GlobalKey<FormState>();
-    bool _saving = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: Text(currentDisplayName.isNotEmpty
-                ? 'Edytuj imię i nazwisko'
-                : 'Dodaj imię i nazwisko'),
-            content: Form(
-              key: _dialogFormKey,
-              child: TextFormField(
-                controller: _controller,
-                decoration: const InputDecoration(
-                  hintText: 'Twoje imię i nazwisko',
-                  helperText:
-                      'Możesz użyć spacji i znaków diakrytycznych. Maks. 80 znaków.',
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: email,
+                enabled: false, // disabled / nieklikalne
+                decoration: _fieldDecoration('').copyWith(
+                  hintText: email.isNotEmpty ? email : 'Brak email',
                 ),
-                maxLength: 80,
+                style: const TextStyle(color: Colors.black87),
+              ),
+              const SizedBox(height: 16),
+
+              const Text(
+                'Imię i nazwisko',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _displayNameController,
+                decoration: _fieldDecoration('Twoje imię i nazwisko'),
+                // usuń widoczny licznik
+                buildCounter: (
+                  _,
+                  {required int currentLength, required bool isFocused, int? maxLength}
+                ) =>
+                    null,
                 validator: (val) {
                   final v = (val ?? '').trim();
                   if (v.isEmpty) return 'Wprowadź imię i nazwisko';
@@ -412,69 +407,35 @@ class _ProfileScreenState extends State<ProfileScreen>
                   return null;
                 },
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: _saving ? null : () => Navigator.of(context).pop(),
-                child: const Text('Anuluj'),
+              const SizedBox(height: 12),
+
+              const Text(
+                'Nazwa użytkownika',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
-              ElevatedButton(
-                onPressed: _saving
-                    ? null
-                    : () async {
-                        if (!(_dialogFormKey.currentState?.validate() ?? false)) {
-                          return;
-                        }
-                        final newDisplayName = _controller.text.trim();
-                        setStateDialog(() => _saving = true);
-                        try {
-                          final user = _authService.currentUser;
-                          if (user == null) {
-                            throw Exception('Użytkownik nie jest zalogowany.');
-                          }
-
-                          // Zapis do Firestore
-                          final usersRef = FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid);
-                          await usersRef.update({'displayName': newDisplayName});
-
-                          // Opcjonalnie: synchronizuj z FirebaseAuth.displayName
-                          try {
-                            await user.updateDisplayName(newDisplayName);
-                          } catch (_) {
-                            // jeśli nie pójdzie, nie przerywamy całej operacji
-                          }
-
-                          if (mounted) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Imię i nazwisko zaktualizowane.')),
-                            );
-                          }
-                        } catch (e) {
-                          final msg = e.toString();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Błąd podczas zapisu: $msg')),
-                            );
-                          }
-                        } finally {
-                          setStateDialog(() => _saving = false);
-                        }
-                      },
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Zapisz'),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _usernameController,
+                decoration: _fieldDecoration('nowa_nazwa'),
+                validator: (val) {
+                  final v = (val ?? '').trim().toLowerCase();
+                  final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
+                  if (v.isEmpty) return 'Wprowadź nazwę użytkownika';
+                  if (!regex.hasMatch(v)) return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
+                  return null;
+                },
               ),
+
+              const SizedBox(height: 18),
+
+              // Removed bottom spinner to avoid layout shift on initial load.
             ],
-          );
-        });
+          ),
+        );
       },
     );
   }

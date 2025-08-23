@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
@@ -163,27 +164,147 @@ class AppDrawer extends StatelessWidget {
                 child: user != null
                     ? OutlinedButton.icon(
                         onPressed: () async {
+                          // pokaż dialog potwierdzenia (styl dopasowany do reszty aplikacji)
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => Dialog(
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // header z ikoną (opcjonalne, spójne z resztą aplikacji)
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: Colors.red[50],
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.logout,
+                                            color: Color(0xFFB71C1C),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Expanded(
+                                          child: Text(
+                                            'Potwierdź wylogowanie',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Czy na pewno chcesz się wylogować?',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () => Navigator.of(ctx).pop(false),
+                                            style: OutlinedButton.styleFrom(
+                                              backgroundColor: Colors.grey.shade100,
+                                              foregroundColor: Colors.black87,
+                                              side: BorderSide(
+                                                  color: Colors.black.withOpacity(0.08)),
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              textStyle: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            child: const Text('Anuluj'),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () => Navigator.of(ctx).pop(true),
+                                            style: OutlinedButton.styleFrom(
+                                              backgroundColor: Colors.red.shade50,
+                                              foregroundColor: Colors.red.shade700,
+                                              side: BorderSide(
+                                                  color: Colors.black.withOpacity(0.08)),
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              textStyle: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            child: const Text('Wyloguj'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+
+                          if (confirm != true) return;
+
+                          // teraz zamykamy drawer i wykonujemy wylogowanie
                           Navigator.of(context).pop();
                           try {
                             await authService.signOut();
                             onSelect(0);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Wylogowano')),
+
+                            // <-- tutaj używamy toastification (success, flat)
+                            toastification.show(
+                              context: context,
+                              title: const Text('Wylogowano pomyślnie'),
+                              style: ToastificationStyle.flat,
+                              type: ToastificationType.success,
+                              autoCloseDuration: const Duration(seconds: 3),
+                              alignment: Alignment.bottomCenter, // <-- tutaj
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
                             );
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Błąd wylogowania: $e')),
+                            // <-- toastification dla błędu (error, flat)
+                            toastification.show(
+                              context: context,
+                              title: Text('Błąd wylogowania: ${e.toString()}'),
+                              style: ToastificationStyle.flat,
+                              type: ToastificationType.error,
+                              autoCloseDuration: const Duration(seconds: 4),
+                              alignment: Alignment.bottomCenter, // <-- tutaj
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
                             );
                           }
                         },
                         icon: const Icon(Icons.logout),
                         label: const Text('Wyloguj'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red[700],
-                          side: BorderSide(color: Colors.red[700]!),
+                          // styl spójny z małymi przyciskami w appce (ale pełna szerokość)
+                          backgroundColor: Colors.red.shade50,
+                          foregroundColor: Colors.red.shade700,
+                          side: BorderSide(color: Colors.black.withOpacity(0.08)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                              borderRadius: BorderRadius.circular(8)),
                           textStyle: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600),
                         ),

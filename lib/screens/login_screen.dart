@@ -1,5 +1,6 @@
 // login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:toastification/toastification.dart'; // <-- dodane
 import '../services/auth_service.dart';
 import 'profile_screen.dart';
 
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _password = '';
   bool _isRegisterMode = false;
   bool _loading = false;
+  bool _showPassword = false;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +57,29 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildAuthForm() {
+    // wspólny InputDecoration żeby nie powtarzać kodu
+    InputDecoration _fieldDecoration(String hint) {
+      return InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.black54),
+        filled: true,
+        fillColor: Colors.grey[200], // tu możesz dopasować odcień
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.black, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      );
+    }
+
     return Form(
       key: _formKey,
       child: Column(
@@ -91,23 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
           TextFormField(
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
-            decoration: InputDecoration(
-              hintText: 'Wprowadź adres email',
-              hintStyle: const TextStyle(color: Colors.black54),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.black),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
+            decoration: _fieldDecoration('Wprowadź adres email'),
             validator: (val) {
               final v = val?.trim();
               if (v == null || v.isEmpty) return 'Wprowadź email';
@@ -130,24 +139,16 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 8),
 
           TextFormField(
-            decoration: InputDecoration(
-              hintText: 'Wprowadź hasło',
-              hintStyle: const TextStyle(color: Colors.black54),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+            decoration: _fieldDecoration('Wprowadź hasło').copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPassword ? Icons.visibility : Icons.visibility_off,
+                ),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
+                tooltip: _showPassword ? 'Ukryj hasło' : 'Pokaż hasło',
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.black),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            obscureText: true,
+            obscureText: !_showPassword,
             enableSuggestions: false,
             autocorrect: false,
             validator: (val) {
@@ -215,14 +216,21 @@ class _LoginScreenState extends State<LoginScreen> {
       _isRegisterMode = !_isRegisterMode;
       _email = '';
       _password = '';
+      _showPassword = false;
     });
   }
 
   Future<void> _submit() async {
     final formState = _formKey.currentState;
     if (formState == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Formularz niedostępny. Spróbuj ponownie.')),
+      toastification.show(
+        context: context,
+        title: const Text('Formularz niedostępny. Spróbuj ponownie.'),
+        style: ToastificationStyle.flat,
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 3),
+        alignment: Alignment.bottomCenter,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
       );
       return;
     }
@@ -244,8 +252,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+        toastification.show(
+          context: context,
+          title: Text(e.toString()),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.error,
+          autoCloseDuration: const Duration(seconds: 4),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
         );
       }
     } finally {

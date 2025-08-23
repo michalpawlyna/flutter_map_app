@@ -4,9 +4,6 @@ import 'package:loading_indicator/loading_indicator.dart';
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({Key? key}) : super(key: key);
 
-  // kolor logo: #1B4369
-  static const Color _logoColor = Color(0xFF1B4369);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,12 +20,11 @@ class LoadingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             SizedBox(
-              width: 60,
-              height: 24,
+              width: 64,
+              height: 64,
               child: LoadingIndicator(
-                indicatorType: Indicator.ballPulse,
-                colors: [_logoColor],
-                // strokeWidth przy ballPulse nie ma dużego wpływu, ale zostawiam wartość domyślną 2
+                indicatorType: Indicator.ballClipRotateMultiple,
+                colors: [Colors.black],
                 strokeWidth: 2.0,
               ),
             ),

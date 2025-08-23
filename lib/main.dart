@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'Zwiedzaj Ustkę i Słupsk',
+      title: 'FlutterMapApp',
       debugShowCheckedModeBanner: false,
       home: MainScaffold(),
     );

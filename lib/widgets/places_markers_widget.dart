@@ -8,6 +8,7 @@ import '../services/firestore_service.dart';
 import '../services/location_service.dart';
 import '../services/route_service.dart';
 import 'place_details_sheet_widget.dart';
+import 'package:toastification/toastification.dart';
 
 class PlacesMarkersWidget extends StatefulWidget {
   final AnimatedMapController mapController;
@@ -198,9 +199,15 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
 
                   Navigator.of(context).pop(); // close the sheet
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Błąd trasy: $e')),
-                  );
+                  toastification.show(
+                              context: context,
+                              title: Text('Błąd trasy: ${e.toString()}'),
+                              style: ToastificationStyle.flat,
+                              type: ToastificationType.error,
+                              autoCloseDuration: const Duration(seconds: 4),
+                              alignment: Alignment.bottomCenter, // <-- tutaj
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
+                            );
                 }
               },
             ),
