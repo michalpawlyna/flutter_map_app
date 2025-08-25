@@ -9,13 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^5.0.0
-  firebase_core: ^3.14.0
-  firebase_auth: ^5.5.1
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.7.0
+  google_sign_in: ^7.1.1
   cloud_firestore: ^5.6.9
   flutter_dotenv: ^5.2.1
   flutter_map: ^7.0.0
@@ -30,8 +26,14 @@ dev_dependencies:
   flutter_tts: ^4.2.3
   loading_indicator: ^3.1.1
   provider: ^6.0.5
-  flutter_launcher_icons: ^0.14.4
   toastification: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
 
 
 flutter:
