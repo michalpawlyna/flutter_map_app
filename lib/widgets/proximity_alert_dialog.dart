@@ -31,7 +31,6 @@ class _ProximityAlertDialogState extends State<ProximityAlertDialog> {
   }
 
   Future<void> _closeDialog() async {
-    // jeśli coś jest w trakcie odtwarzania -> zatrzymaj i poczekaj
     if (widget.tts.isSpeaking.value) {
       await widget.tts.stop();
     }
@@ -43,7 +42,6 @@ class _ProximityAlertDialogState extends State<ProximityAlertDialog> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // jeśli back -> zatrzymaj i powiadom proximity service
         if (widget.tts.isSpeaking.value) {
           await widget.tts.stop();
         }
@@ -156,9 +154,7 @@ class _ProximityAlertDialogState extends State<ProximityAlertDialog> {
                         return ElevatedButton.icon(
                           onPressed: () async {
                             final text = _composeSpeechText();
-                            // używamy toggle, bo poprawnie zarządza stanem
                             await widget.tts.toggle(text);
-                            // ValueListenableBuilder odświeży przycisk
                           },
                           icon: speaking ? const Icon(Icons.stop) : const Icon(Icons.volume_up),
                           label: Text(speaking ? 'Zatrzymaj' : 'Odczytaj'),

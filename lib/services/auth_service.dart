@@ -13,11 +13,9 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn signIn = GoogleSignIn.instance;
 
-  // Strumień zmian stanu uwierzytelnienia
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
 
-  // Rejestracja + utworzenie dokumentu w Firestore (users/{uid})
   Future<User?> registerWithEmail(String email, String password) async {
     final creds = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -26,7 +24,6 @@ class AuthService {
 
     final user = creds.user;
     if (user != null) {
-      // Utworzenie minimalnego profilu w Firestore (bez usernameLower)
       final usersRef = _firestore.collection('users').doc(user.uid);
       await usersRef.set({
         'uid': user.uid,
@@ -47,43 +44,32 @@ class AuthService {
     return creds.user;
   }
 
-  /// Sign in / register using Google account.
-  /// - jeśli użytkownik po raz pierwszy loguje się kontem Google — tworzy dokument w `users/{uid}`
-  /// - zwraca Firebase [User] lub null jeśli użytkownik anulował logowanie
+
   Future<User?> signInWithGoogle({String? serverClientId}) async {
-    // (opcjonalnie) zainicjalizuj instancję; jeśli używasz google-services.json
-    // nie musisz podawać serverClientId, ale na Androidzie czasem trzeba
-    // web-client-id (serverClientId) żeby dostać idToken/serverAuthCode.
     try {
       if (serverClientId != null && serverClientId.isNotEmpty) {
         await signIn.initialize(serverClientId: serverClientId);
       } else {
-        // i tak warto wywołać initialize (zaczekaj na gotowość)
         await signIn.initialize();
       }
     } catch (e) {
-      // initialize może rzuć wyjątek na niektórych platformach — ignorujemy, bo nie zawsze konieczne
+      
     }
 
-    // Uruchom flow uwierzytelnienia (zwraca GoogleSignInAccount lub null jeśli anulowane)
     final GoogleSignInAccount? googleAccount = await signIn.authenticate();
     if (googleAccount == null) {
-      // użytkownik anulował logowanie
       return null;
     }
 
-    // Spróbuj pobrać idToken (to pole powinno być dostępne w większości konfiguracji)
     final googleAuth = await googleAccount.authentication;
     final String? idToken = googleAuth.idToken;
 
     AuthCredential credential;
 
     if (idToken != null && idToken.isNotEmpty) {
-      // Jeśli mamy idToken — użyjemy go do stworzenia credential dla Firebase
       credential = GoogleAuthProvider.credential(idToken: idToken);
     } else {
-      // Jeśli nie ma idToken, spróbuj uzyskać accessToken przez authorizationClient (w v7: trzeba prosić o scope)
-      // Poproś o scope'y (przykładowo 'openid' i 'email' - wymagane do tożsamości)
+
       try {
         final scopes = <String>['openid', 'email', 'profile'];
         final GoogleSignInClientAuthorization authorization =
@@ -97,17 +83,14 @@ class AuthService {
 
         credential = GoogleAuthProvider.credential(accessToken: accessToken);
       } catch (e) {
-        // Jeśli wszystko zawiedzie — rzuć przyjazny błąd
         throw Exception(
             'Nie udało się uzyskać tokenów z Google (idToken/accessToken). Sprawdź konfigurację Google/Firebase. Detale: $e');
       }
     }
 
-    // Zaloguj się do Firebase z utworzonym credential
     final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
     final user = userCredential.user;
 
-    // Utwórz dokument w Firestore jak przy rejestracji e-mail (tylko jeśli nie istnieje)
     if (user != null) {
       final usersRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final snap = await usersRef.get();
@@ -121,7 +104,6 @@ class AuthService {
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } else {
-        // opcjonalna drobna aktualizacja pola displayName/photoURL jeżeli puste
         final data = snap.data() as Map<String, dynamic>? ?? {};
         final update = <String, dynamic>{};
         if ((data['displayName'] as String?)?.isEmpty ?? true) {
@@ -140,21 +122,14 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    // Najpierw wyloguj z Firebase
     await _auth.signOut();
 
-    // Następnie wyloguj z GoogleSignIn (jeśli wcześniej logowano przez Google)
     try {
       await signIn.signOut();
     } catch (_) {
-      // ignoruj błędy przy wylogowaniu z GoogleSignIn
     }
   }
 
-  /// Prosta aktualizacja nazwy użytkownika:
-  /// - waliduje nową nazwę
-  /// - aktualizuje users/{uid}.username
-  /// Rzuca [Exception] jeśli użytkownik nie jest zalogowany lub profil nie istnieje.
   Future<void> updateUsername({
     required String newUsername,
   }) async {
@@ -166,7 +141,7 @@ class AuthService {
     final uid = user.uid;
     final username = newUsername.trim();
 
-    // prosty regex walidacji (3-30 znaków, a-z0-9._-)
+    //regex walidacji (3-30 znaków, a-z0-9._-)
     final usernameRegex = RegExp(r'^[a-z0-9._-]{3,30}$');
     if (!usernameRegex.hasMatch(username.toLowerCase())) {
       throw Exception('Nieprawidłowa nazwa (3-30 znaków, a-z0-9._-).');
@@ -183,7 +158,6 @@ class AuthService {
 
       final currentUsername = (userSnap.data() as Map<String, dynamic>?)?['username'] as String? ?? '';
 
-      // jeśli taka sama nazwa — nic nie robimy
       if (currentUsername == username) return;
 
       tx.update(usersRef, {

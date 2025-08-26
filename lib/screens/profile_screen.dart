@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:toastification/toastification.dart'; // <-- dodane
+import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -32,7 +32,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _loading = false;
   bool _saving = false;
 
-  // helper to ensure listeners are attached to current controllers
   void _attachListeners() {
     _displayNameController?.removeListener(_onControllerChanged);
     _usernameController?.removeListener(_onControllerChanged);
@@ -41,7 +40,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _onControllerChanged() {
-    // trigger rebuild so AppBar action visibility updates
     if (mounted) setState(() {});
   }
 
@@ -100,7 +98,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       final usersRef = FirebaseFirestore.instance.collection('users').doc(uid);
       await usersRef.update(changes);
 
-      // sync displayName with FirebaseAuth if changed (best-effort)
       try {
         final user = _authService.currentUser;
         if (user != null && changes.containsKey('displayName')) {
@@ -180,7 +177,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     );
                   }
-                  // show check only when there are unsaved changes
                   if (!_hasChanges) return const SizedBox.shrink();
                   return IconButton(
                     icon: const Icon(Icons.check, color: Colors.black),
@@ -209,7 +205,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // small helper to avoid repeating _authService.currentUser inline (keeps code explicit)
   User? _auth_service_currentUserFallback() => _authService.currentUser;
 
   Widget _buildNotLoggedIn(BuildContext context) {
@@ -290,7 +285,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           displayName = (data['displayName'] ?? '') as String;
         }
 
-        // recreate controllers only when server values changed
         if (_displayNameController == null || _serverDisplayName != displayName) {
           _displayNameController?.removeListener(_onControllerChanged);
           _displayNameController?.dispose();
@@ -304,7 +298,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           _serverUsername = username;
         }
 
-        // attach listeners (safe to call repeatedly after recreation)
         _attachListeners();
 
         return Form(
@@ -325,7 +318,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                       bottom: 0,
                       child: InkWell(
                         onTap: () {
-                          // zamieniono SnackBar na toastification (type: info)
                           toastification.show(
                             context: context,
                             title: const Text('Zmienianie avatara - funkcja w przygotowaniu.'),
@@ -374,7 +366,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 8),
               TextFormField(
                 initialValue: email,
-                enabled: false, // disabled / nieklikalne
+                enabled: false,
                 decoration: _fieldDecoration('').copyWith(
                   hintText: email.isNotEmpty ? email : 'Brak email',
                 ),
@@ -394,7 +386,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               TextFormField(
                 controller: _displayNameController,
                 decoration: _fieldDecoration('Twoje imię i nazwisko'),
-                // usuń widoczny licznik
                 buildCounter: (
                   _,
                   {required int currentLength, required bool isFocused, int? maxLength}
@@ -420,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 8),
               TextFormField(
                 controller: _usernameController,
-                decoration: _fieldDecoration('nowa_nazwa'),
+                decoration: _fieldDecoration('Nazwa użytkownika'),
                 validator: (val) {
                   final v = (val ?? '').trim().toLowerCase();
                   final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
@@ -432,7 +423,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
               const SizedBox(height: 18),
 
-              // Removed bottom spinner to avoid layout shift on initial load.
             ],
           ),
         );

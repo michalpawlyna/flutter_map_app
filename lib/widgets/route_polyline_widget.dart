@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Rysuje "gradient" na trasie przez rozbicie jej na krótkie segmenty
-/// i interpolację kolorów. Przy dużych trasach może wygenerować sporo segmentów.
-/// Jeśli chcesz ograniczyć liczbę segmentów, trzeba grupować punkty w "chunky".
 class RoutePolylineWidget extends StatelessWidget {
   final List<LatLng>? points;
   final double strokeWidth;

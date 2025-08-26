@@ -161,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
           const SizedBox(height: 24),
 
-          // przycisk logowania/rejestracji przez email
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -193,7 +192,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
           const SizedBox(height: 12),
 
-          // separator
           Row(
             children: const [
               Expanded(child: Divider()),
@@ -207,7 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
           const SizedBox(height: 12),
 
-          // przycisk Google Sign-In
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -217,10 +214,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                side: const BorderSide(color: Colors.black54),
+                side: BorderSide(color: Colors.black.withOpacity(0.08)),
+                backgroundColor: Colors.grey.shade100,
+                foregroundColor: Colors.black87,
               ),
               icon: Image.asset(
-                'assets/google.png', // dodaj ikonę Google do assets
+                'assets/google.png',
                 width: 22,
                 height: 22,
                 errorBuilder: (_, __, ___) => const Icon(Icons.login),

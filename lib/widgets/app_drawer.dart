@@ -24,15 +24,11 @@ class AppDrawer extends StatelessWidget {
 
     return Drawer(
       backgroundColor: Colors.white,
-      // brak zaokrągleń po prawej
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: SafeArea(
         child: Column(
           children: [
-            // większy odstęp od góry dla ładnego wyglądu
             const SizedBox(height: 28),
-
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: user != null
@@ -61,7 +57,6 @@ class AppDrawer extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // nazwa (placeholder 'Użytkownik' gdy brak displayName)
                                 Text(
                                   displayName,
                                   style: const TextStyle(
@@ -112,13 +107,11 @@ class AppDrawer extends StatelessWidget {
 
             const SizedBox(height: 18),
 
-            // Divider nie dotyka krawędzi
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Divider(color: Colors.grey[200], thickness: 1, height: 1),
             ),
 
-            // Lista opcji
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -156,7 +149,6 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
 
-            // Przyciski dolne (Wyloguj) - tylko gdy zalogowany
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
               child: SizedBox(
@@ -164,7 +156,6 @@ class AppDrawer extends StatelessWidget {
                 child: user != null
                     ? OutlinedButton.icon(
                         onPressed: () async {
-                          // pokaż dialog potwierdzenia (styl dopasowany do reszty aplikacji)
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => Dialog(
@@ -178,7 +169,6 @@ class AppDrawer extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // header z ikoną (opcjonalne, spójne z resztą aplikacji)
                                     Row(
                                       children: [
                                         Container(
@@ -266,39 +256,35 @@ class AppDrawer extends StatelessWidget {
 
                           if (confirm != true) return;
 
-                          // teraz zamykamy drawer i wykonujemy wylogowanie
                           Navigator.of(context).pop();
                           try {
                             await authService.signOut();
                             onSelect(0);
 
-                            // <-- tutaj używamy toastification (success, flat)
                             toastification.show(
                               context: context,
                               title: const Text('Wylogowano pomyślnie'),
                               style: ToastificationStyle.flat,
                               type: ToastificationType.success,
                               autoCloseDuration: const Duration(seconds: 3),
-                              alignment: Alignment.bottomCenter, // <-- tutaj
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
+                              alignment: Alignment.bottomCenter, 
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
                             );
                           } catch (e) {
-                            // <-- toastification dla błędu (error, flat)
                             toastification.show(
                               context: context,
                               title: Text('Błąd wylogowania: ${e.toString()}'),
                               style: ToastificationStyle.flat,
                               type: ToastificationType.error,
                               autoCloseDuration: const Duration(seconds: 4),
-                              alignment: Alignment.bottomCenter, // <-- tutaj
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
+                              alignment: Alignment.bottomCenter,
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), 
                             );
                           }
                         },
                         icon: const Icon(Icons.logout),
                         label: const Text('Wyloguj'),
                         style: OutlinedButton.styleFrom(
-                          // styl spójny z małymi przyciskami w appce (ale pełna szerokość)
                           backgroundColor: Colors.red.shade50,
                           foregroundColor: Colors.red.shade700,
                           side: BorderSide(color: Colors.black.withOpacity(0.08)),

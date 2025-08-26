@@ -35,7 +35,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
     super.dispose();
   }
 
-  // <-- TU: tylko nazwa i opis, bez adresu
   String _composeSpeechText() {
     final b = StringBuffer();
     b.write(widget.place.name);
@@ -61,7 +60,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle bar for dragging
           Center(
             child: Container(
               width: 40,
@@ -73,7 +71,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
               ),
             ),
           ),
-          // First row: icon and place info
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -138,10 +135,8 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             ),
           const SizedBox(height: 20),
 
-          // Nowy wiersz: mały przycisk TTS po lewej (tylko ikonka), większy przycisk Nawiguj po prawej
           Row(
             children: [
-              // mały kwadratowy przycisk TTS (ikonka tylko)
               SizedBox(
                 width: 44,
                 height: 44,
@@ -170,7 +165,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
 
               const SizedBox(width: 12),
 
-              // przycisk Nawiguj (większy, rozciągający się)
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _loading

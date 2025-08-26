@@ -5,7 +5,6 @@ import '../models/place.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Pobiera wszystkie miasta
   Future<List<City>> getCities() async {
     final snap = await _db.collection('cities').get();
     return snap.docs
@@ -13,7 +12,6 @@ class FirestoreService {
       .toList();
   }
 
-  /// Pobiera wszystkie miejsca z kolekcji root „places”
   Future<List<Place>> getAllPlaces() async {
     final snap = await _db.collection('places').get();
     return snap.docs
@@ -21,7 +19,6 @@ class FirestoreService {
       .toList();
   }
 
-  /// Jeśli chcesz filtrować miejsca po mieście
   Future<List<Place>> getPlacesForCity(String cityId) async {
     final snap = await _db
       .collection('places')

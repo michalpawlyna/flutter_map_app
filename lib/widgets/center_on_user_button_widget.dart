@@ -16,33 +16,27 @@ class CenterOnUserButton extends StatelessWidget {
   }) : super(key: key);
 
   Future<void> _centerImmediately() async {
-    // 1) Spróbuj pobrać ostatnią znaną pozycję
     final last = await Geolocator.getLastKnownPosition();
     if (last != null) {
-      // Użyj animateTo zamiast move dla płynnej animacji
       mapController.animateTo(
         dest: LatLng(last.latitude, last.longitude),
         zoom: zoom,
       );
     }
-    // 2) Równolegle pobierz dokładną lokalizację
     try {
       final pos = await LocationService().getCurrentLocation();
-      // sprawdź, czy znacząco się zmieniła (np. >5 m)
       if (last == null ||
           Geolocator.distanceBetween(
                 last.latitude, last.longitude,
                 pos.latitude, pos.longitude,
               ) >
               5) {
-        // Użyj animateTo zamiast move dla płynnej animacji
         mapController.animateTo(
           dest: LatLng(pos.latitude, pos.longitude),
           zoom: zoom,
         );
       }
     } catch (_) {
-      // ignoruj — zostaliśmy już gdzieś wycentrowani
     }
   }
 

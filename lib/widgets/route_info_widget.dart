@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/route_service.dart';
 
-/// Widżet wyświetlający informacje o aktualnej trasie.
-/// Stylizacja spójna z `PlaceDetailsSheet`, ale zmodyfikowana zgodnie z prośbą:
-/// - ikona zmieniona na 'place' (bardziej czytelna jako cel),
-/// - nazwa miejsca pokazana jako główny nagłówek (zamiast słowa "Trasa").
 class RouteInfoWidget extends StatelessWidget {
   final RouteResult? route;
   final VoidCallback onClear;
@@ -51,7 +47,6 @@ class RouteInfoWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Główna linia: ikona + nazwa miejsca jako główny nagłówek
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -86,7 +81,6 @@ class RouteInfoWidget extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
-                        // opcjonalny subtelny tekst opisowy
                         Text(
                           'Szczegóły trasy',
                           style: TextStyle(
@@ -103,7 +97,6 @@ class RouteInfoWidget extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Dwa prostokątne pola Dystans / Czas bez obramowań
               Row(
                 children: [
                   Expanded(
@@ -112,7 +105,6 @@ class RouteInfoWidget extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
-                        // brak border
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +137,6 @@ class RouteInfoWidget extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
-                        // brak border
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,11 +166,8 @@ class RouteInfoWidget extends StatelessWidget {
               ),
 
               const SizedBox(height: 14),
-
-              // Dolny wiersz: mały przycisk usunięcia po lewej i przycisk startu po prawej
               Row(
                 children: [
-                  // mały kwadratowy przycisk usunięcia
                   SizedBox(
                     width: 44,
                     height: 44,
@@ -200,7 +188,6 @@ class RouteInfoWidget extends StatelessWidget {
 
                   const SizedBox(width: 12),
 
-                  // przycisk rozpoczęcia trasy (na razie nic nie robi)
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {

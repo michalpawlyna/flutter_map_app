@@ -9,13 +9,10 @@ class ProximityService {
   final List<Place> places;
   final OnProximityDetected onDetected;
 
-  /// Cooldown od ostatniego pokazania alertu dla danego place
   final Duration cooldown;
 
-  /// Ile sekund użytkownik musi być wewnątrz radiusu zanim zaakceptujemy wejście
   final double minEnterTimeSeconds;
 
-  /// Domyślny radius jeśli Place nie ma własnego pola
   final double defaultRadiusMeters;
 
   final Map<String, DateTime> _lastShown = {};
@@ -23,10 +20,7 @@ class ProximityService {
 
   bool _isAlertShowing = false;
 
-  /// ostatnia pozycja otrzymana przez onPosition
   Position? _lastPosition;
-
-  /// timery planujące sprawdzenie po upływie minEnterTimeSeconds
   final Map<String, Timer> _timers = {};
 
   ProximityService({
@@ -37,9 +31,7 @@ class ProximityService {
     this.defaultRadiusMeters = 50.0,
   });
 
-  /// Wywołuj przy każdej aktualizacji pozycji
   void onPosition(Position pos) {
-    // zapamiętujemy ostatnią pozycję niezależnie od stanu
     _lastPosition = pos;
 
     if (_isAlertShowing) return;
@@ -54,7 +46,7 @@ class ProximityService {
         pos.longitude,
         p.lat,
         p.lng,
-      ); // w metrach
+      );
 
       if (dist <= radius) {
         if (dist < nearestDist) {
@@ -65,7 +57,6 @@ class ProximityService {
     }
 
     if (nearest == null) {
-      // nie jesteśmy w zasięgu żadnego miejsca -> czyść zapis wejść i anuluj timery
       _enteredAt.clear();
       _cancelAllTimers();
       return;
@@ -74,35 +65,30 @@ class ProximityService {
     final key = nearest.id;
     final now = DateTime.now();
 
-    // cooldown - nie pokazuj ponownie jeśli ostatnio pokazane dla tego miejsca
     final last = _lastShown[key];
     if (last != null && now.difference(last) < cooldown) {
       return;
     }
 
-    // debounce: musimy być wewnątrz radiusu przez minEnterTimeSeconds
     _enteredAt.putIfAbsent(key, () => now);
     final enteredAt = _enteredAt[key]!;
     final elapsedSec = now.difference(enteredAt).inMilliseconds / 1000.0;
 
     if (elapsedSec >= minEnterTimeSeconds) {
-      // wystarczająco długo -> zaakceptuj natychmiast
       _triggerAlert(key, nearest);
       return;
     }
-
-    // jeśli jeszcze nie minęło, zaplanuj sprawdzenie po pozostałym czasie
     _scheduleEnterCheck(key, nearest, radius, elapsedSec);
   }
 
   void _scheduleEnterCheck(String key, Place place, double radius, double elapsedSec) {
-    // jeśli timer już istnieje dla tego miejsca -> nie zakładamy nowego
+
     if (_timers.containsKey(key)) return;
 
     final remaining = (minEnterTimeSeconds - elapsedSec).clamp(0.0, minEnterTimeSeconds);
     final ms = (remaining * 1000).round();
     final timer = Timer(Duration(milliseconds: ms), () {
-      // timer fired - sprawdź czy wciąż mamy ostatnią pozycję i czy dalej jesteśmy w radiusie
+
       try {
         if (_isAlertShowing) {
           _timers.remove(key)?.cancel();
@@ -112,7 +98,6 @@ class ProximityService {
         final last = _lastShown[key];
         final now = DateTime.now();
         if (last != null && now.difference(last) < cooldown) {
-          // cooldown aktywny - usuń wpisy i timer
           _enteredAt.remove(key);
           _timers.remove(key)?.cancel();
           return;
@@ -120,7 +105,6 @@ class ProximityService {
 
         final pos = _lastPosition;
         if (pos == null) {
-          // brak pozycji - nie możemy zaakceptować
           _enteredAt.remove(key);
           _timers.remove(key)?.cancel();
           return;
@@ -134,10 +118,8 @@ class ProximityService {
         );
 
         if (dist <= radius) {
-          // dalej w radiusie -> wyzwól alert
           _triggerAlert(key, place);
         } else {
-          // już poza zasięgiem -> czyść i anuluj timer
           _enteredAt.remove(key);
           _timers.remove(key)?.cancel();
         }
@@ -150,13 +132,11 @@ class ProximityService {
   }
 
   void _triggerAlert(String key, Place place) {
-    // final checks
     if (_isAlertShowing) return;
 
     final now = DateTime.now();
     final last = _lastShown[key];
     if (last != null && now.difference(last) < cooldown) {
-      // jednak w cooldownie -> nie pokazujemy
       _enteredAt.remove(key);
       _cancelTimer(key);
       return;
@@ -181,15 +161,12 @@ class ProximityService {
     _timers.clear();
   }
 
-  /// Wywołaj, gdy alert został zamknięty (np. user kliknął Zamknij lub Odczytaj)
-  /// pozwala to ponownie reagować na kolejne wejścia
   void alertClosed() {
     _isAlertShowing = false;
     _enteredAt.clear();
     _cancelAllTimers();
   }
 
-  /// Opcjonalnie zresetuj cooldown dla danego miejsca (np. do testów)
   void resetCooldownFor(String placeId) {
     _lastShown.remove(placeId);
   }

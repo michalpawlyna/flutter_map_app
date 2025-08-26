@@ -16,8 +16,6 @@ class PlacesMarkersWidget extends StatefulWidget {
   final Function(Place)? onMarkerTap;
   final bool enableClustering;
 
-  /// Callback wywoływany gdy widget wygeneruje trasę (RouteResult).
-  /// Teraz przekazywany jest także powiązany Place (może być null).
   final void Function(RouteResult route, Place? place)? onRouteGenerated;
 
   const PlacesMarkersWidget({
@@ -40,8 +38,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   List<Place> _places = [];
   bool _isLoading = true;
   String? _error;
-
-  // ID aktualnie aktywnego (klikniętego) miejsca
   String? _activePlaceId;
 
   @override
@@ -81,7 +77,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     }
   }
 
-  // mały wrapper na wypadek różnic w nazwie metody w FirestoreService
   Future<List<Place>> _firestore_service_getAllPlacesFallback() {
     return _firestoreService.getAllPlaces();
   }
@@ -165,7 +160,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
             zoom: widget.mapController.mapController.camera.zoom,
           );
 
-          // otwieramy bottom sheet
           await showModalBottomSheet(
             context: context,
             isScrollControlled: true,
@@ -177,17 +171,13 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                 try {
                   final userPos = await LocationService().getCurrentLocation();
                   final userLatLng = LatLng(userPos.latitude, userPos.longitude);
-
-                  // Pobieramy trasę (RouteResult)
                   final routeResult = await _routeService.getWalkingRoute(
                     userLatLng,
                     LatLng(selectedPlace.lat, selectedPlace.lng),
                   );
 
-                  // Powiadamiamy rodzica aby narysował trasę — TERAZ przekazujemy też Place
                   widget.onRouteGenerated?.call(routeResult, selectedPlace);
 
-                  // Opcjonalnie dopasowujemy kamerę tutaj:
                   if (routeResult.points.isNotEmpty) {
                     widget.mapController.mapController.fitCamera(
                       CameraFit.bounds(
@@ -197,7 +187,7 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                     );
                   }
 
-                  Navigator.of(context).pop(); // close the sheet
+                  Navigator.of(context).pop();
                 } catch (e) {
                   toastification.show(
                               context: context,
@@ -205,8 +195,8 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                               style: ToastificationStyle.flat,
                               type: ToastificationType.error,
                               autoCloseDuration: const Duration(seconds: 4),
-                              alignment: Alignment.bottomCenter, // <-- tutaj
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
+                              alignment: Alignment.bottomCenter,
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
                             );
                 }
               },

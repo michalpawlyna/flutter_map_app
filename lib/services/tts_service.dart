@@ -17,7 +17,6 @@ class TtsService {
     await _flutterTts.setPitch(1.0);
     await _flutterTts.setSpeechRate(0.45);
 
-    // Handlery pozostają, ale nie polegamy wyłącznie na nich do aktualizacji UI
     _flutterTts.setStartHandler(() {
       isSpeaking.value = true;
     });
@@ -36,25 +35,19 @@ class TtsService {
     });
   }
 
-  /// Rozpoczyna odczyt i USTAWIA isSpeaking=true natychmiast,
-  /// by UI natychmiast zareagował (handlers mogą się opóźniać/platformowo różnić).
   Future<void> speak(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
     try {
-      // zatrzymaj poprzedni (bez czekania na handler)
       await _flutterTts.stop();
-      // ustaw stan natychmiast dla responsywności UI
       isSpeaking.value = true;
       await _flutterTts.speak(trimmed);
-      // uwaga: completion handler ustawi isSpeaking=false po zakończeniu
     } catch (e) {
       if (kDebugMode) print("TTS speak failed: $e");
       isSpeaking.value = false;
     }
   }
 
-  /// Zatrzymaj natychmiast i ustaw stan na false
   Future<void> stop() async {
     try {
       await _flutterTts.stop();
@@ -65,7 +58,6 @@ class TtsService {
     }
   }
 
-  /// Toggle: jeśli czyta -> zatrzymaj, inaczej -> zacznij czytać
   Future<void> toggle(String text) async {
     if (isSpeaking.value) {
       await stop();

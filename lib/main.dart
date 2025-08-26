@@ -8,7 +8,7 @@ import 'screens/map_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/auth_service.dart';
-import 'widgets/app_drawer.dart'; // <- nowy import
+import 'widgets/app_drawer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

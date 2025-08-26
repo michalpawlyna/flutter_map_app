@@ -20,11 +20,7 @@ import '../services/proximity_service.dart';
 import '../services/route_service.dart';
 import '../widgets/route_polyline_widget.dart';
 import '../widgets/route_info_widget.dart';
-
-// nowy import
 import '../widgets/menu_button_widget.dart';
-
-// import ekranu ładowania (zakładam, że plik w tym samym katalogu co ten)
 import 'loading_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -58,8 +54,6 @@ class _MapScreenState extends State<MapScreen>
 
   RouteResult? _currentRoute;
   bool _routeLoading = false;
-
-  // nowe pole: nazwa docelowego miejsca związana z aktualną trasą
   String? _destinationName;
 
   @override
@@ -136,8 +130,8 @@ class _MapScreenState extends State<MapScreen>
                               style: ToastificationStyle.flat,
                               type: ToastificationType.error,
                               autoCloseDuration: const Duration(seconds: 4),
-                              alignment: Alignment.bottomCenter, // <-- tutaj
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), // <-- odstęp od dołu
+                              alignment: Alignment.bottomCenter, 
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), 
                             );
       }
     });
@@ -161,7 +155,6 @@ class _MapScreenState extends State<MapScreen>
       future: _initializationFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Zastąpiono statyczny ekran ładowania własnym LoadingScreen
           return const LoadingScreen();
         }
 
@@ -214,7 +207,6 @@ class _MapScreenState extends State<MapScreen>
                     onRouteGenerated: (route, place) {
                       setState(() {
                         _currentRoute = route;
-                        // ustawiamy nazwę miejsca przekazanego przez widget
                         _destinationName = place?.name;
                       });
                       if (route.points.isNotEmpty) {

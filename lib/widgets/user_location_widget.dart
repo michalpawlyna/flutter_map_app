@@ -8,10 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 class UserLocationWidget extends StatelessWidget {
-  /// Strumień pozycji użytkownika, dostarczany z zewnątrz.
   final Stream<Position> positionStream;
-
-  /// Minimalny promień rysowanego kręgu (jeśli GPS zwróci mniejszą wartość).
   final double minAccuracyRadius;
 
   const UserLocationWidget({
@@ -22,14 +19,9 @@ class UserLocationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Używamy StreamBuilder, który automatycznie nasłuchuje na strumieniu
-    // i przebudowuje UI, gdy pojawią się nowe dane.
     return StreamBuilder<Position>(
       stream: positionStream,
       builder: (context, snapshot) {
-        // Jeśli nie ma jeszcze danych (lub jest błąd), nie rysuj nic.
-        // Dzięki zmianom w LocationService pierwszy event (current position)
-        // powinien nadejść szybko — wtedy marker się pojawi.
         if (!snapshot.hasData) {
           return const SizedBox.shrink();
         }
@@ -41,7 +33,6 @@ class UserLocationWidget extends StatelessWidget {
 
         return Stack(
           children: [
-            // Accuracy circle (unchanged)
             CircleLayer(
               circles: [
                 CircleMarker(
@@ -52,14 +43,12 @@ class UserLocationWidget extends StatelessWidget {
                 ),
               ],
             ),
-            // User marker (changed to a simple blue dot)
             MarkerLayer(
               markers: [
                 Marker(
                   point: latLng,
                   width: 16,
                   height: 16,
-                  // DLA flutter_map >6: używamy child:, nie builder:
                   child: Container(
                     decoration: const BoxDecoration(
                       color: Colors.blue,

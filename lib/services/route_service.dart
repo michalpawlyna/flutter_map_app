@@ -4,7 +4,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 
-/// Model wynikowy trasy
 class RouteResult {
   final List<LatLng> points;
   final double distanceMeters;
@@ -22,8 +21,6 @@ class RouteService {
       'https://api.openrouteservice.org/v2/directions/foot-walking/geojson';
   final String? _apiKey = dotenv.env['OPENROUTE_API_KEY'];
 
-  /// Fetches a walking route between [start] and [end] points.
-  /// Returns RouteResult containing points and optional metadata.
   Future<RouteResult> getWalkingRoute(LatLng start, LatLng end) async {
     if (_apiKey == null || _apiKey!.isEmpty) {
       throw Exception('OpenRouteService API key is not set in .env');
@@ -66,7 +63,6 @@ class RouteService {
       return LatLng(lat, lng);
     }).toList();
 
-    // --- próbujemy odczytać meta z odpowiedzi (jeśli są) ---
     double? distanceMeters;
     double? durationSeconds;
 
@@ -94,15 +90,14 @@ class RouteService {
       }
     }
 
-    // --- fallback: oblicz sumę odcinków lokalnie jeśli brakuje danych ---
     if (distanceMeters == null || durationSeconds == null) {
       double d = 0;
       for (int i = 0; i < points.length - 1; i++) {
-        d += _haversineDistance(points[i], points[i + 1]); // metry
+        d += _haversineDistance(points[i], points[i + 1]);
       }
       distanceMeters ??= d;
       durationSeconds ??=
-          (distanceMeters / 1000) / 5 * 3600; // oszacowanie 5 km/h jako spacer
+          (distanceMeters / 1000) / 5 * 3600;
     }
 
     return RouteResult(
@@ -112,9 +107,8 @@ class RouteService {
     );
   }
 
-  // Haversine in meters
   double _haversineDistance(LatLng a, LatLng b) {
-    const R = 6371000.0; // Earth radius in meters
+    const R = 6371000.0;
     final lat1 = _degToRad(a.latitude);
     final lat2 = _degToRad(b.latitude);
     final dLat = _degToRad(b.latitude - a.latitude);
