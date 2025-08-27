@@ -1,4 +1,3 @@
-// profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -142,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return StreamBuilder<User?>(
+    return StreamBuilder<User?>( 
       stream: _authService.authStateChanges,
       builder: (context, authSnapshot) {
         final user = authSnapshot.data ?? _auth_service_currentUserFallback();
@@ -306,51 +305,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 42,
-                      backgroundColor: Colors.grey[200],
-                      child: const Icon(Icons.person, size: 44, color: Colors.black54),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: InkWell(
-                        onTap: () {
-                          toastification.show(
-                            context: context,
-                            title: const Text('Zmienianie avatara - funkcja w przygotowaniu.'),
-                            style: ToastificationStyle.flat,
-                            type: ToastificationType.info,
-                            autoCloseDuration: const Duration(seconds: 3),
-                            alignment: Alignment.bottomCenter,
-                            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.edit,
-                            size: 18,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: CircleAvatar(
+                  radius: 42,
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
+                  child: user.photoURL == null
+                      ? const Icon(Icons.person, size: 44, color: Colors.black54)
+                      : null,
                 ),
               ),
               const SizedBox(height: 18),
