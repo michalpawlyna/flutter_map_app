@@ -5,12 +5,14 @@ class RouteInfoWidget extends StatelessWidget {
   final RouteResult? route;
   final VoidCallback onClear;
   final String? destinationName;
+  final List<String>? visitedPlaces;
 
   const RouteInfoWidget({
     Key? key,
     required this.route,
     required this.onClear,
     this.destinationName,
+    this.visitedPlaces,
   }) : super(key: key);
 
   String _formatDuration(double seconds) {
@@ -96,6 +98,35 @@ class RouteInfoWidget extends StatelessWidget {
               ),
 
               const SizedBox(height: 12),
+              if (visitedPlaces != null && visitedPlaces!.isNotEmpty) ...[
+                Text(
+                  'Wybrane miejsca:',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: visitedPlaces!.map((n) => Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            n,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        )).toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               Row(
                 children: [

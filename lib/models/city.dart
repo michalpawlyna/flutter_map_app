@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 
 class City {
   final String id;
@@ -13,12 +13,12 @@ class City {
     });
 
   factory City.fromMap(String id, Map<String, dynamic> data) {
-    final loc = data['location'] as GeoPoint;
+    final loc = data['location'] as Map<String, dynamic>; 
     return City(
       id: id,
       name: data['name'] as String,
-      lat: loc.latitude,
-      lng: loc.longitude,
+      lat: (loc['lat'] as num).toDouble(),     
+      lng: (loc['long'] as num).toDouble(),
     );
   }
 }

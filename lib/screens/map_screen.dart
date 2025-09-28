@@ -25,8 +25,9 @@ import 'loading_screen.dart';
 
 class MapScreen extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final ValueNotifier<Map<String, dynamic>?>? routeResultNotifier;
 
-  const MapScreen({Key? key, required this.scaffoldKey}) : super(key: key);
+  const MapScreen({Key? key, required this.scaffoldKey, this.routeResultNotifier}) : super(key: key);
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -42,7 +43,6 @@ class _MapScreenState extends State<MapScreen>
   late final Future<void> _initializationFuture;
 
   LatLng? _initialCenter;
-  Position? _initialPosition;
 
   final FirestoreService _firestoreService = FirestoreService();
   final LocationService _locationService = LocationService();
@@ -53,8 +53,8 @@ class _MapScreenState extends State<MapScreen>
   List<Place> _places = [];
 
   RouteResult? _currentRoute;
-  bool _routeLoading = false;
   String? _destinationName;
+  List<String>? _visitedPlacesNames;
 
   @override
   void initState() {
@@ -63,6 +63,30 @@ class _MapScreenState extends State<MapScreen>
     _initializationFuture = _initializeServicesAndLocationStream().then((_) {
       debugPrint('[MapScreen] initialization future completed');
     });
+    widget.routeResultNotifier?.addListener(_handleExternalRouteResult);
+  }
+
+  void _handleExternalRouteResult() {
+    final result = widget.routeResultNotifier?.value;
+  if (result == null) return;
+
+  if (result['route'] is RouteResult) {
+      setState(() {
+        _currentRoute = result['route'] as RouteResult;
+        final places = result['places'] as List<dynamic>?;
+        _visitedPlacesNames = places?.cast<String>();
+      });
+
+      if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
+        _animatedMapController.mapController.fitCamera(
+          CameraFit.bounds(
+            bounds: LatLngBounds.fromPoints(_currentRoute!.points),
+            padding: const EdgeInsets.all(40),
+          ),
+        );
+      }
+    }
+    widget.routeResultNotifier?.value = null;
   }
 
   Future<void> _initializeServicesAndLocationStream() async {
@@ -84,7 +108,6 @@ class _MapScreenState extends State<MapScreen>
     try {
       final initialPos = await _locationService.getCurrentLocation();
       _initialCenter = LatLng(initialPos.latitude, initialPos.longitude);
-      _initialPosition = initialPos;
       debugPrint('[MapScreen] initial center set to $_initialCenter');
     } catch (e) {
       debugPrint('[MapScreen] could not get explicit initial position: $e');
@@ -227,10 +250,12 @@ class _MapScreenState extends State<MapScreen>
               RouteInfoWidget(
                 route: _currentRoute,
                 destinationName: _destinationName,
+                visitedPlaces: _visitedPlacesNames,
                 onClear: () {
                   setState(() {
                     _currentRoute = null;
                     _destinationName = null;
+                    _visitedPlacesNames = null;
                   });
                 },
               ),

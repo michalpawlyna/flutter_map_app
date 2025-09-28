@@ -66,7 +66,6 @@ class AppDrawer extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                // email
                                 Text(
                                   email,
                                   style: TextStyle(
@@ -122,6 +121,14 @@ class AppDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       onSelect(0);
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.route,
+                    title: 'Stwórz własną trasę',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onSelect(-1);
                     },
                   ),
                   _DrawerItem(

@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/map_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/select_city_screen.dart';
 import 'services/auth_service.dart';
 import 'widgets/app_drawer.dart';
 
@@ -53,8 +54,10 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final AuthService _authService = AuthService();
 
+  final ValueNotifier<Map<String, dynamic>?> _routeResultNotifier = ValueNotifier(null);
+
   late final List<Widget> _screens = [
-    MapScreen(scaffoldKey: _scaffoldKey),
+    MapScreen(scaffoldKey: _scaffoldKey, routeResultNotifier: _routeResultNotifier),
     ProfileScreen(onBack: () => setState(() => _selectedIndex = 0)),
   ];
 
@@ -64,7 +67,21 @@ class _MainScaffoldState extends State<MainScaffold> {
       key: _scaffoldKey,
       drawer: AppDrawer(
         authService: _authService,
-        onSelect: (index) => setState(() => _selectedIndex = index),
+        onSelect: (index) async {
+          if (index == -1) {
+            final result = await Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const SelectCityScreen(),
+            ));
+
+            if (result is Map<String, dynamic> && result['route'] != null) {
+              _routeResultNotifier.value = result;
+              setState(() => _selectedIndex = 0);
+            }
+            return;
+          }
+
+          setState(() => _selectedIndex = index);
+        },
       ),
       body: IndexedStack(
         index: _selectedIndex,

@@ -114,7 +114,7 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.red[700],
+                color: Colors.black,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),

@@ -22,22 +22,29 @@ class RouteService {
   final String? _apiKey = dotenv.env['OPENROUTE_API_KEY'];
 
   Future<RouteResult> getWalkingRoute(LatLng start, LatLng end) async {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    return getWalkingRouteFromWaypoints([start, end]);
+  }
+
+  Future<RouteResult> getWalkingRouteFromWaypoints(List<LatLng> waypoints) async {
+    if (_apiKey == null || _apiKey.isEmpty) {
       throw Exception('OpenRouteService API key is not set in .env');
     }
 
+    if (waypoints.length < 2) {
+      throw Exception('At least two waypoints are required to build a route');
+    }
+
     final url = Uri.parse(_baseUrl);
-    final body = jsonEncode({
-      'coordinates': [
-        [start.longitude, start.latitude],
-        [end.longitude, end.latitude],
-      ]
-    });
+    final coords = waypoints
+        .map((p) => [p.longitude, p.latitude])
+        .toList();
+
+    final body = jsonEncode({'coordinates': coords});
 
     final response = await http.post(
       url,
       headers: {
-        'Authorization': _apiKey!,
+        'Authorization': _apiKey,
         'Content-Type': 'application/json',
       },
       body: body,
@@ -55,9 +62,9 @@ class RouteService {
     }
 
     final geometry = features[0]['geometry'] as Map<String, dynamic>;
-    final coords = geometry['coordinates'] as List<dynamic>;
+    final coordsResp = geometry['coordinates'] as List<dynamic>;
 
-    final List<LatLng> points = coords.map<LatLng>((point) {
+    final List<LatLng> points = coordsResp.map<LatLng>((point) {
       final lng = (point[0] as num).toDouble();
       final lat = (point[1] as num).toDouble();
       return LatLng(lat, lng);
@@ -102,8 +109,8 @@ class RouteService {
 
     return RouteResult(
       points: points,
-      distanceMeters: distanceMeters!,
-      durationSeconds: durationSeconds!,
+      distanceMeters: distanceMeters,
+      durationSeconds: durationSeconds,
     );
   }
 
