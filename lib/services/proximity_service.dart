@@ -81,14 +81,20 @@ class ProximityService {
     _scheduleEnterCheck(key, nearest, radius, elapsedSec);
   }
 
-  void _scheduleEnterCheck(String key, Place place, double radius, double elapsedSec) {
-
+  void _scheduleEnterCheck(
+    String key,
+    Place place,
+    double radius,
+    double elapsedSec,
+  ) {
     if (_timers.containsKey(key)) return;
 
-    final remaining = (minEnterTimeSeconds - elapsedSec).clamp(0.0, minEnterTimeSeconds);
+    final remaining = (minEnterTimeSeconds - elapsedSec).clamp(
+      0.0,
+      minEnterTimeSeconds,
+    );
     final ms = (remaining * 1000).round();
     final timer = Timer(Duration(milliseconds: ms), () {
-
       try {
         if (_isAlertShowing) {
           _timers.remove(key)?.cancel();

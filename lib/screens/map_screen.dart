@@ -27,7 +27,11 @@ class MapScreen extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final ValueNotifier<Map<String, dynamic>?>? routeResultNotifier;
 
-  const MapScreen({Key? key, required this.scaffoldKey, this.routeResultNotifier}) : super(key: key);
+  const MapScreen({
+    Key? key,
+    required this.scaffoldKey,
+    this.routeResultNotifier,
+  }) : super(key: key);
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -68,9 +72,9 @@ class _MapScreenState extends State<MapScreen>
 
   void _handleExternalRouteResult() {
     final result = widget.routeResultNotifier?.value;
-  if (result == null) return;
+    if (result == null) return;
 
-  if (result['route'] is RouteResult) {
+    if (result['route'] is RouteResult) {
       setState(() {
         _currentRoute = result['route'] as RouteResult;
         final places = result['places'] as List<dynamic>?;
@@ -134,33 +138,38 @@ class _MapScreenState extends State<MapScreen>
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => ProximityAlertDialog(
-            place: place,
-            tts: _tts,
-            onClose: () => _proximityService?.alertClosed(),
-          ),
+          builder:
+              (ctx) => ProximityAlertDialog(
+                place: place,
+                tts: _tts,
+                onClose: () => _proximityService?.alertClosed(),
+              ),
         );
       },
     );
 
-    _locSub = positionStream.listen((pos) {
-      _proximityService?.onPosition(pos);
-    }, onError: (e) {
-      if (mounted) {
-        toastification.show(
-                              context: context,
-                              title: Text('Błąd strumienia lokalizacji: ${e.toString()}'),
-                              style: ToastificationStyle.flat,
-                              type: ToastificationType.error,
-                              autoCloseDuration: const Duration(seconds: 4),
-                              alignment: Alignment.bottomCenter, 
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24), 
-                            );
-      }
-    });
+    _locSub = positionStream.listen(
+      (pos) {
+        _proximityService?.onPosition(pos);
+      },
+      onError: (e) {
+        if (mounted) {
+          toastification.show(
+            context: context,
+            title: Text('Błąd strumienia lokalizacji: ${e.toString()}'),
+            style: ToastificationStyle.flat,
+            type: ToastificationType.error,
+            autoCloseDuration: const Duration(seconds: 4),
+            alignment: Alignment.bottomCenter,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+          );
+        }
+      },
+    );
   }
 
-  Future<List<Place>> _firestore_service_getAllPlaces() => _firestoreService.getAllPlaces();
+  Future<List<Place>> _firestore_service_getAllPlaces() =>
+      _firestoreService.getAllPlaces();
 
   @override
   void dispose() {

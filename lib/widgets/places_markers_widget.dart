@@ -61,9 +61,10 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     });
 
     try {
-      final places = widget.cityId != null
-          ? await _firestoreService.getPlacesForCity(widget.cityId!)
-          : await _firestore_service_getAllPlacesFallback();
+      final places =
+          widget.cityId != null
+              ? await _firestoreService.getPlacesForCity(widget.cityId!)
+              : await _firestore_service_getAllPlacesFallback();
 
       setState(() {
         _places = places;
@@ -91,50 +92,52 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     final List<Widget> layers = [];
 
     if (widget.enableClustering) {
-      layers.add(MarkerClusterLayerWidget(
-        options: MarkerClusterLayerOptions(
-          maxClusterRadius: 45,
-          size: const Size(40, 40),
-          markers: markers,
-          showPolygon: false,
-          onClusterTap: (cluster) {
-            final bounds = _calculateBounds(cluster.markers);
-            widget.mapController.mapController.fitCamera(
-              CameraFit.bounds(
-                bounds: bounds,
-                padding: const EdgeInsets.all(50),
-                maxZoom: 15,
-              ),
-            );
-          },
-          builder: (context, clusterMarkers) {
-            return Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                clusterMarkers.length.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+      layers.add(
+        MarkerClusterLayerWidget(
+          options: MarkerClusterLayerOptions(
+            maxClusterRadius: 45,
+            size: const Size(40, 40),
+            markers: markers,
+            showPolygon: false,
+            onClusterTap: (cluster) {
+              final bounds = _calculateBounds(cluster.markers);
+              widget.mapController.mapController.fitCamera(
+                CameraFit.bounds(
+                  bounds: bounds,
+                  padding: const EdgeInsets.all(50),
+                  maxZoom: 15,
                 ),
-              ),
-            );
-          },
+              );
+            },
+            builder: (context, clusterMarkers) {
+              return Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  clusterMarkers.length.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              );
+            },
+          ),
         ),
-      ));
+      );
     } else {
       layers.add(MarkerLayer(markers: markers));
     }
@@ -164,43 +167,48 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (context) => PlaceDetailsSheet(
-              place: place,
-              mapController: widget.mapController.mapController,
-              onNavigate: (selectedPlace) async {
-                try {
-                  final userPos = await LocationService().getCurrentLocation();
-                  final userLatLng = LatLng(userPos.latitude, userPos.longitude);
-                  final routeResult = await _routeService.getWalkingRoute(
-                    userLatLng,
-                    LatLng(selectedPlace.lat, selectedPlace.lng),
-                  );
+            builder:
+                (context) => PlaceDetailsSheet(
+                  place: place,
+                  mapController: widget.mapController.mapController,
+                  onNavigate: (selectedPlace) async {
+                    try {
+                      final userPos =
+                          await LocationService().getCurrentLocation();
+                      final userLatLng = LatLng(
+                        userPos.latitude,
+                        userPos.longitude,
+                      );
+                      final routeResult = await _routeService.getWalkingRoute(
+                        userLatLng,
+                        LatLng(selectedPlace.lat, selectedPlace.lng),
+                      );
 
-                  widget.onRouteGenerated?.call(routeResult, selectedPlace);
+                      widget.onRouteGenerated?.call(routeResult, selectedPlace);
 
-                  if (routeResult.points.isNotEmpty) {
-                    widget.mapController.mapController.fitCamera(
-                      CameraFit.bounds(
-                        bounds: LatLngBounds.fromPoints(routeResult.points),
-                        padding: const EdgeInsets.all(40),
-                      ),
-                    );
-                  }
+                      if (routeResult.points.isNotEmpty) {
+                        widget.mapController.mapController.fitCamera(
+                          CameraFit.bounds(
+                            bounds: LatLngBounds.fromPoints(routeResult.points),
+                            padding: const EdgeInsets.all(40),
+                          ),
+                        );
+                      }
 
-                  Navigator.of(context).pop();
-                } catch (e) {
-                  toastification.show(
-                              context: context,
-                              title: Text('Błąd trasy: ${e.toString()}'),
-                              style: ToastificationStyle.flat,
-                              type: ToastificationType.error,
-                              autoCloseDuration: const Duration(seconds: 4),
-                              alignment: Alignment.bottomCenter,
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                            );
-                }
-              },
-            ),
+                      Navigator.of(context).pop();
+                    } catch (e) {
+                      toastification.show(
+                        context: context,
+                        title: Text('Błąd trasy: ${e.toString()}'),
+                        style: ToastificationStyle.flat,
+                        type: ToastificationType.error,
+                        autoCloseDuration: const Duration(seconds: 4),
+                        alignment: Alignment.bottomCenter,
+                        margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                      );
+                    }
+                  },
+                ),
           );
 
           setState(() => _activePlaceId = null);
@@ -233,9 +241,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
       if (lng > maxLng) maxLng = lng;
     }
 
-    return LatLngBounds(
-      LatLng(minLat, minLng),
-      LatLng(maxLat, maxLng),
-    );
+    return LatLngBounds(LatLng(minLat, minLng), LatLng(maxLat, maxLng));
   }
 }

@@ -25,7 +25,9 @@ class RouteService {
     return getWalkingRouteFromWaypoints([start, end]);
   }
 
-  Future<RouteResult> getWalkingRouteFromWaypoints(List<LatLng> waypoints) async {
+  Future<RouteResult> getWalkingRouteFromWaypoints(
+    List<LatLng> waypoints,
+  ) async {
     if (_apiKey == null || _apiKey.isEmpty) {
       throw Exception('OpenRouteService API key is not set in .env');
     }
@@ -35,24 +37,20 @@ class RouteService {
     }
 
     final url = Uri.parse(_baseUrl);
-    final coords = waypoints
-        .map((p) => [p.longitude, p.latitude])
-        .toList();
+    final coords = waypoints.map((p) => [p.longitude, p.latitude]).toList();
 
     final body = jsonEncode({'coordinates': coords});
 
     final response = await http.post(
       url,
-      headers: {
-        'Authorization': _apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers: {'Authorization': _apiKey, 'Content-Type': 'application/json'},
       body: body,
     );
 
     if (response.statusCode != 200) {
       throw Exception(
-          'Failed to fetch route: ${response.statusCode} ${response.reasonPhrase}');
+        'Failed to fetch route: ${response.statusCode} ${response.reasonPhrase}',
+      );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -64,11 +62,12 @@ class RouteService {
     final geometry = features[0]['geometry'] as Map<String, dynamic>;
     final coordsResp = geometry['coordinates'] as List<dynamic>;
 
-    final List<LatLng> points = coordsResp.map<LatLng>((point) {
-      final lng = (point[0] as num).toDouble();
-      final lat = (point[1] as num).toDouble();
-      return LatLng(lat, lng);
-    }).toList();
+    final List<LatLng> points =
+        coordsResp.map<LatLng>((point) {
+          final lng = (point[0] as num).toDouble();
+          final lat = (point[1] as num).toDouble();
+          return LatLng(lat, lng);
+        }).toList();
 
     double? distanceMeters;
     double? durationSeconds;
@@ -103,8 +102,7 @@ class RouteService {
         d += _haversineDistance(points[i], points[i + 1]);
       }
       distanceMeters ??= d;
-      durationSeconds ??=
-          (distanceMeters / 1000) / 5 * 3600;
+      durationSeconds ??= (distanceMeters / 1000) / 5 * 3600;
     }
 
     return RouteResult(
@@ -123,8 +121,7 @@ class RouteService {
 
     final sinDlat = sin(dLat / 2);
     final sinDlon = sin(dLon / 2);
-    final aa = sinDlat * sinDlat +
-        cos(lat1) * cos(lat2) * sinDlon * sinDlon;
+    final aa = sinDlat * sinDlat + cos(lat1) * cos(lat2) * sinDlon * sinDlon;
     final c = 2 * atan2(sqrt(aa), sqrt(1 - aa));
     return R * c;
   }

@@ -1,19 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+
 import '../models/place.dart';
 import '../services/firestore_service.dart';
 import '../services/location_service.dart';
 import '../services/route_service.dart';
+import '../widgets/shimmer_placeholder_widget.dart';
 
-class SelectPlacesScreen extends StatelessWidget {
+class SelectPlacesScreen extends StatefulWidget {
   final String? cityId;
   final String cityName;
 
-  const SelectPlacesScreen({
-    Key? key,
-    this.cityId,
-    required this.cityName,
-  }) : super(key: key);
+  const SelectPlacesScreen({Key? key, this.cityId, required this.cityName})
+      : super(key: key);
+
+  @override
+  State<SelectPlacesScreen> createState() => _SelectPlacesScreenState();
+}
+
+class _SelectPlacesScreenState extends State<SelectPlacesScreen> {
+  final List<String> _selectedPlaceIds = [];
+  static const int maxSelection = 5;
+
+  void _updateSelection(List<String> ids) {
+    setState(() {
+      _selectedPlaceIds.clear();
+      _selectedPlaceIds.addAll(ids);
+    });
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -31,21 +47,49 @@ class SelectPlacesScreen extends StatelessWidget {
               fontSize: 20,
             ),
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  '${_selectedPlaceIds.length}/$maxSelection',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ),
+          ],
           centerTitle: true,
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.black,
           elevation: 0,
         ),
-        backgroundColor: Colors.grey[50],
-        body: _PlacesList(cityId: cityId, cityName: cityName),
+        backgroundColor: Colors.white,
+        body: _PlacesList(
+          cityId: widget.cityId,
+          cityName: widget.cityName,
+          selectedPlaceIds: _selectedPlaceIds,
+          onSelectionChanged: _updateSelection,
+        ),
       );
 }
 
 class _PlacesList extends StatefulWidget {
   final String? cityId;
   final String cityName;
+  final List<String> selectedPlaceIds;
+  final Function(List<String>) onSelectionChanged;
 
-  const _PlacesList({Key? key, this.cityId, required this.cityName}) : super(key: key);
+  const _PlacesList({
+    Key? key,
+    this.cityId,
+    required this.cityName,
+    required this.selectedPlaceIds,
+    required this.onSelectionChanged,
+  }) : super(key: key);
 
   @override
   State<_PlacesList> createState() => _PlacesListState();
@@ -54,9 +98,11 @@ class _PlacesList extends StatefulWidget {
 class _PlacesListState extends State<_PlacesList> {
   final FirestoreService _fs = FirestoreService();
   late Future<List<Place>> _future;
-  final List<String> _selectedPlaceIds = [];
+  final CacheManager _imageCacheManager = DefaultCacheManager();
 
-  static const int maxSelection = 5;  //Max places
+  LatLng? _currentLocation;
+
+  static const int maxSelection = 5; //Max places
 
   @override
   void initState() {
@@ -66,37 +112,62 @@ class _PlacesListState extends State<_PlacesList> {
     } else {
       _future = _fs.getAllPlaces();
     }
-  }
 
-  void _toggleSelectionById(String id) {
-    setState(() {
-      if (_selectedPlaceIds.contains(id)) {
-        _selectedPlaceIds.remove(id);
-      } else {
-        if (_selectedPlaceIds.length >= maxSelection) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Możesz wybrać maksymalnie $maxSelection miejsc')),
-          );
-          return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final pos = await LocationService().getCurrentLocation();
+        if (mounted) {
+          setState(() {
+            _currentLocation = LatLng(pos.latitude, pos.longitude);
+          });
         }
-        _selectedPlaceIds.add(id);
+      } catch (_) {
+        // ignore
       }
     });
   }
 
-  MaterialColor _avatarColor(String key) {
-    final hash = key.codeUnits.fold<int>(0, (p, n) => p + n);
-    final colors = <MaterialColor>[
-      Colors.teal,
-      Colors.indigo,
-      Colors.deepOrange,
-      Colors.purple,
-      Colors.blue,
-      Colors.brown,
-      Colors.cyan,
-      Colors.green,
-    ];
-    return colors[hash % colors.length];
+  void _toggleSelectionById(String id) {
+    final newSelection = List<String>.from(widget.selectedPlaceIds);
+    if (newSelection.contains(id)) {
+      newSelection.remove(id);
+    } else {
+      if (newSelection.length >= maxSelection) {
+        return;
+      }
+      newSelection.add(id);
+    }
+    widget.onSelectionChanged(newSelection);
+  }
+
+  String transformedCloudinaryUrl(
+    String? url, {
+    int width = 300,
+    int? height,
+    String crop = 'fill',
+  }) {
+    if (url == null || url.isEmpty) return '';
+    const uploadSegment = '/upload/';
+    final idx = url.indexOf(uploadSegment);
+    if (idx == -1) return url;
+
+    final parts = <String>[];
+    parts.add('w_$width');
+    if (height != null) parts.add('h_$height');
+    if (crop.isNotEmpty) parts.add('c_$crop');
+    parts.add('q_auto');
+    parts.add('f_auto');
+
+    final transformation = parts.join(',');
+    return url.replaceFirst(uploadSegment, '$uploadSegment$transformation/');
+  }
+
+  String _formatDistance(double meters) {
+    if (meters < 1000) {
+      return '${meters.round()} m';
+    }
+    final km = (meters / 1000);
+    return '${km.toStringAsFixed(1)} km';
   }
 
   @override
@@ -117,7 +188,9 @@ class _PlacesListState extends State<_PlacesList> {
 
               final places = snapshot.data ?? [];
               if (places.isEmpty) {
-                return const Center(child: Text('Brak miejsc w wybranym mieście'));
+                return const Center(
+                  child: Text('Brak miejsc w wybranym mieście'),
+                );
               }
 
               return ListView.separated(
@@ -127,95 +200,135 @@ class _PlacesListState extends State<_PlacesList> {
                 itemBuilder: (context, index) {
                   final p = places[index];
                   final key = p.id;
-                  final selected = _selectedPlaceIds.contains(key);
-                  final avatarColor = _avatarColor(key);
+                  final selected = widget.selectedPlaceIds.contains(key);
+                  final canSelect = selected || widget.selectedPlaceIds.length < maxSelection;
 
-                  return InkWell(
-                    onTap: () => _toggleSelectionById(key),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 90),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: selected ? Colors.grey[100] : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected ? Colors.black : Colors.grey.withOpacity(0.12),
-                          width: selected ? 1.6 : 1,
+                  final photoUrl = p.photoUrl ?? '';
+                  final thumbUrl = transformedCloudinaryUrl(photoUrl, width: 360);
+
+                  double? distanceMeters;
+                  if (_currentLocation != null) {
+                    try {
+                      final dist = Distance();
+                      distanceMeters = dist(
+                        _currentLocation!,
+                        LatLng(p.lat, p.lng),
+                      );
+                    } catch (_) {
+                      distanceMeters = null;
+                    }
+                  }
+
+                  return Opacity(
+                    opacity: canSelect ? 1.0 : 0.5,
+                    child: InkWell(
+                      onTap: canSelect ? () => _toggleSelectionById(key) : null,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 90),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: selected ? 10 : 6,
-                            offset: const Offset(0, 2),
-                          )
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: avatarColor.shade100,
-                              shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              clipBehavior: Clip.hardEdge,
+                              child: photoUrl.isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: thumbUrl,
+                                      cacheManager: _imageCacheManager,
+                                      width: 52,
+                                      height: 52,
+                                      fit: BoxFit.cover,
+                                      fadeInDuration:
+                                          const Duration(milliseconds: 300),
+                                      placeholder: (context, url) => const ShimmerPlaceholder(
+                                        width: 52,
+                                        height: 52,
+                                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                                      ),
+                                      errorWidget: (context, url, error) => Container(
+                                        color: Colors.grey[300],
+                                        alignment: Alignment.center,
+                                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ),
                             ),
-                            child: Center(
-                              child: Text(
-                                p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: avatarColor.shade700,
-                                ),
+
+                            const SizedBox(width: 14),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    p.name,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  
+                                  if (distanceMeters != null)
+                                    Text(
+                                      _formatDistance(distanceMeters),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                          ),
 
-                          const SizedBox(width: 14),
+                            const SizedBox(width: 8),
 
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  p.name,
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: selected ? Colors.black : Colors.transparent,
+                                border: Border.all(
+                                  color: selected ? Colors.black : Colors.grey,
+                                  width: 2,
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  p.address.isNotEmpty ? p.address : (p.desc.isNotEmpty ? p.desc : ''),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black54,
-                                    height: 1.3,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  height: 6,
-                                  width: 60,
-                                  decoration: BoxDecoration(
-                                    color: avatarColor.shade100,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ],
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: selected
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
+                                  : null,
                             ),
-                          ),
-
-                          Icon(
-                            Icons.chevron_right,
-                            color: selected ? Colors.black : Colors.grey.withOpacity(0.6),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -230,18 +343,20 @@ class _PlacesListState extends State<_PlacesList> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _selectedPlaceIds.isEmpty
+              onPressed: widget.selectedPlaceIds.isEmpty
                   ? null
                   : () async {
                       final snapshotPlaces = await _future;
                       final selectedPlaces = snapshotPlaces
-                          .where((p) => _selectedPlaceIds.contains(p.id))
+                          .where((p) => widget.selectedPlaceIds.contains(p.id))
                           .toList();
                       try {
                         final pos = await LocationService().getCurrentLocation();
                         final start = LatLng(pos.latitude, pos.longitude);
 
-                        final List<Place> remaining = List.from(selectedPlaces);
+                        final List<Place> remaining = List.from(
+                          selectedPlaces,
+                        );
                         final List<Place> visitOrder = [];
                         LatLng current = start;
                         final Distance dist = Distance();
@@ -258,9 +373,12 @@ class _PlacesListState extends State<_PlacesList> {
                         }
 
                         final waypoints = <LatLng>[start];
-                        waypoints.addAll(visitOrder.map((p) => LatLng(p.lat, p.lng)));
+                        waypoints.addAll(
+                          visitOrder.map((p) => LatLng(p.lat, p.lng)),
+                        );
 
-                        final route = await RouteService().getWalkingRouteFromWaypoints(waypoints);
+                        final route = await RouteService()
+                            .getWalkingRouteFromWaypoints(waypoints);
 
                         Navigator.of(context).pop({
                           'route': route,
@@ -268,7 +386,11 @@ class _PlacesListState extends State<_PlacesList> {
                         });
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Błąd tworzenia trasy: ${e.toString()}')),
+                          SnackBar(
+                            content: Text(
+                              'Błąd tworzenia trasy: ${e.toString()}',
+                            ),
+                          ),
                         );
                       }
                     },

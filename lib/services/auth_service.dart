@@ -43,7 +43,6 @@ class AuthService {
     return creds.user;
   }
 
-
   Future<User?> signInWithGoogle({String? serverClientId}) async {
     try {
       if (serverClientId != null && serverClientId.isNotEmpty) {
@@ -51,9 +50,7 @@ class AuthService {
       } else {
         await signIn.initialize();
       }
-    } catch (e) {
-      
-    }
+    } catch (e) {}
 
     final GoogleSignInAccount? googleAccount = await signIn.authenticate();
     if (googleAccount == null) {
@@ -68,7 +65,6 @@ class AuthService {
     if (idToken != null && idToken.isNotEmpty) {
       credential = GoogleAuthProvider.credential(idToken: idToken);
     } else {
-
       try {
         final scopes = <String>['openid', 'email', 'profile'];
         final GoogleSignInClientAuthorization authorization =
@@ -77,21 +73,27 @@ class AuthService {
         final String? accessToken = authorization.accessToken;
         if (accessToken == null || accessToken.isEmpty) {
           throw Exception(
-              'Nie udało się pobrać accessToken. Sprawdź konfigurację OAuth (serverClientId, SHA-1/256, scopes).');
+            'Nie udało się pobrać accessToken. Sprawdź konfigurację OAuth (serverClientId, SHA-1/256, scopes).',
+          );
         }
 
         credential = GoogleAuthProvider.credential(accessToken: accessToken);
       } catch (e) {
         throw Exception(
-            'Nie udało się uzyskać tokenów z Google (idToken/accessToken). Sprawdź konfigurację Google/Firebase. Detale: $e');
+          'Nie udało się uzyskać tokenów z Google (idToken/accessToken). Sprawdź konfigurację Google/Firebase. Detale: $e',
+        );
       }
     }
 
-    final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(
+      credential,
+    );
     final user = userCredential.user;
 
     if (user != null) {
-      final usersRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final usersRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
       final snap = await usersRef.get();
       if (!snap.exists) {
         await usersRef.set({
@@ -106,7 +108,8 @@ class AuthService {
         final data = snap.data() as Map<String, dynamic>? ?? {};
         final update = <String, dynamic>{};
         if ((data['displayName'] as String?)?.isEmpty ?? true) {
-          update['displayName'] = user.displayName ?? googleAccount.displayName ?? '';
+          update['displayName'] =
+              user.displayName ?? googleAccount.displayName ?? '';
         }
         if ((data['photoURL'] as String?)?.isEmpty ?? true) {
           update['photoURL'] = user.photoURL ?? googleAccount.photoUrl ?? '';
@@ -125,13 +128,10 @@ class AuthService {
 
     try {
       await signIn.signOut();
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
-  Future<void> updateUsername({
-    required String newUsername,
-  }) async {
+  Future<void> updateUsername({required String newUsername}) async {
     final user = _auth.currentUser;
     if (user == null) {
       throw Exception('Użytkownik nie jest zalogowany');
@@ -155,13 +155,13 @@ class AuthService {
         throw Exception('Profil użytkownika nie istnieje.');
       }
 
-      final currentUsername = (userSnap.data() as Map<String, dynamic>?)?['username'] as String? ?? '';
+      final currentUsername =
+          (userSnap.data() as Map<String, dynamic>?)?['username'] as String? ??
+          '';
 
       if (currentUsername == username) return;
 
-      tx.update(usersRef, {
-        'username': username,
-      });
+      tx.update(usersRef, {'username': username});
     });
   }
 }

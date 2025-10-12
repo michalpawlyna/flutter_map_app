@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../models/place.dart';
 import '../services/tts_service.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
+import 'package:toastification/toastification.dart';
+import 'shimmer_placeholder_widget.dart';
 
 class PlaceDetailsSheet extends StatefulWidget {
   final Place place;
@@ -22,17 +28,80 @@ class PlaceDetailsSheet extends StatefulWidget {
 class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   bool _loading = false;
   late final TtsService _tts;
+  late final CacheManager _imageCacheManager;
+  final AuthService _auth = AuthService();
+  final FirestoreService _firestore = FirestoreService();
+  bool _isFavorited = false;
+  bool _checkingFav = false;
 
   @override
   void initState() {
     super.initState();
     _tts = TtsService();
+    _imageCacheManager = DefaultCacheManager();
+    _initFavourite();
   }
 
   @override
   void dispose() {
     _tts.dispose();
     super.dispose();
+  }
+
+  Future<void> _initFavourite() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    setState(() => _checkingFav = true);
+    try {
+      final fav = await _firestore.isPlaceFavorited(user.uid, widget.place.id);
+      if (mounted) setState(() => _isFavorited = fav);
+    } catch (_) {}
+    if (mounted) setState(() => _checkingFav = false);
+  }
+
+  Future<void> _toggleFavourite() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    setState(() => _checkingFav = true);
+    try {
+      if (_isFavorited) {
+        await _firestore.removePlaceFromFavourites(user.uid, widget.place.id);
+        if (mounted) setState(() => _isFavorited = false);
+        toastification.show(
+          context: context,
+          title: const Text('Usunięto z ulubionych'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.success,
+          autoCloseDuration: const Duration(seconds: 3),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+      } else {
+        await _firestore.addPlaceToFavourites(user.uid, widget.place.id);
+        if (mounted) setState(() => _isFavorited = true);
+        toastification.show(
+          context: context,
+          title: const Text('Dodano do ulubionych'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.success,
+          autoCloseDuration: const Duration(seconds: 3),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+      }
+    } catch (e) {
+      toastification.show(
+        context: context,
+        title: Text('Błąd: ${e.toString()}'),
+        style: ToastificationStyle.flat,
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 4),
+        alignment: Alignment.bottomCenter,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      );
+    }
+    if (mounted) setState(() => _checkingFav = false);
   }
 
   String _composeSpeechText() {
@@ -45,8 +114,103 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
     return b.toString();
   }
 
+  String transformedCloudinaryUrl(
+    String? url, {
+    int width = 300,
+    int? height,
+    String crop = 'fill',
+  }) {
+    if (url == null || url.isEmpty) return '';
+    const uploadSegment = '/upload/';
+    final idx = url.indexOf(uploadSegment);
+    if (idx == -1) return url;
+
+    final parts = <String>[];
+    parts.add('w_$width');
+    if (height != null) parts.add('h_$height');
+    if (crop.isNotEmpty) parts.add('c_$crop');
+    parts.add('q_auto');
+    parts.add('f_auto');
+
+    final transformation = parts.join(',');
+    return url.replaceFirst(uploadSegment, '$uploadSegment$transformation/');
+  }
+
+  void _showFullImage(String? originalUrl) {
+    final url = originalUrl ?? '';
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Brak zdjęcia do wyświetlenia')),
+      );
+      return;
+    }
+
+    final fullUrl = transformedCloudinaryUrl(url, width: 1200);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: InteractiveViewer(
+                  panEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 1.0,
+                  maxScale: 5.0,
+                  child: Center(
+                    child: CachedNetworkImage(
+                      imageUrl: fullUrl,
+                      cacheManager: _imageCacheManager,
+                      fadeInDuration: const Duration(milliseconds: 320),
+                      placeholder: (context, url) => Center(
+                        child: ShimmerPlaceholder(
+                          width: double.infinity,
+                          height: 300,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                top: 32,
+                right: 16,
+                child: SafeArea(
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final String originalPhotoUrl = widget.place.photoUrl ?? '';
+    final String thumbUrl = transformedCloudinaryUrl(
+      originalPhotoUrl,
+      width: 360,
+    );
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -74,19 +238,47 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.red[100],
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.location_on,
-                  color: Color(0xFFF44336),
+              InkWell(
+                onTap: () => _showFullImage(originalPhotoUrl),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  clipBehavior: Clip.hardEdge,
+                  child: thumbUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: thumbUrl,
+                          cacheManager: _imageCacheManager,
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          placeholder: (context, url) => const ShimmerPlaceholder(
+                            width: 56,
+                            height: 56,
+                            borderRadius: BorderRadius.all(Radius.circular(6)),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey.shade200,
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.broken_image, color: Colors.grey),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.photo, color: Colors.grey),
+                        ),
                 ),
               ),
+
               const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,6 +304,23 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                   ],
                 ),
               ),
+              if (_auth.currentUser != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: _checkingFav
+                        ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+                        : IconButton(
+                            onPressed: _toggleFavourite,
+                            icon: Icon(
+                              _isFavorited ? Icons.favorite : Icons.favorite_border,
+                              color: _isFavorited ? Colors.red : Colors.black54,
+                            ),
+                          ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -167,25 +376,27 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
 
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _loading
-                      ? null
-                      : () async {
-                          if (widget.onNavigate != null) {
-                            setState(() => _loading = true);
-                            await widget.onNavigate!(widget.place);
-                            if (mounted) setState(() => _loading = false);
-                          }
-                        },
-                  icon: _loading
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Icon(Icons.navigation),
+                  onPressed:
+                      _loading
+                          ? null
+                          : () async {
+                            if (widget.onNavigate != null) {
+                              setState(() => _loading = true);
+                              await widget.onNavigate!(widget.place);
+                              if (mounted) setState(() => _loading = false);
+                            }
+                          },
+                  icon:
+                      _loading
+                          ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                          : const Icon(Icons.navigation),
                   label: Text(_loading ? 'Tworzenie trasy...' : 'Nawiguj'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
@@ -219,11 +430,12 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => PlaceDetailsSheet(
-        place: place,
-        mapController: mapController,
-        onNavigate: onNavigate,
-      ),
+      builder:
+          (context) => PlaceDetailsSheet(
+            place: place,
+            mapController: mapController,
+            onNavigate: onNavigate,
+          ),
     );
   }
 }

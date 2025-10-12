@@ -83,10 +83,7 @@ class _ProximityAlertDialogState extends State<ProximityAlertDialog> {
                       color: Colors.red[100],
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                    ),
+                    child: const Icon(Icons.location_on, color: Colors.red),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -156,7 +153,10 @@ class _ProximityAlertDialogState extends State<ProximityAlertDialog> {
                             final text = _composeSpeechText();
                             await widget.tts.toggle(text);
                           },
-                          icon: speaking ? const Icon(Icons.stop) : const Icon(Icons.volume_up),
+                          icon:
+                              speaking
+                                  ? const Icon(Icons.stop)
+                                  : const Icon(Icons.volume_up),
                           label: Text(speaking ? 'Zatrzymaj' : 'Odczytaj'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,

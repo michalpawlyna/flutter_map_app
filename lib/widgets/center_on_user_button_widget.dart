@@ -27,8 +27,10 @@ class CenterOnUserButton extends StatelessWidget {
       final pos = await LocationService().getCurrentLocation();
       if (last == null ||
           Geolocator.distanceBetween(
-                last.latitude, last.longitude,
-                pos.latitude, pos.longitude,
+                last.latitude,
+                last.longitude,
+                pos.latitude,
+                pos.longitude,
               ) >
               5) {
         mapController.animateTo(
@@ -36,8 +38,7 @@ class CenterOnUserButton extends StatelessWidget {
           zoom: zoom,
         );
       }
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   @override
@@ -62,11 +63,7 @@ class CenterOnUserButton extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.my_location,
-              color: Colors.black,
-              size: 24,
-            ),
+            child: const Icon(Icons.my_location, color: Colors.black, size: 24),
           ),
         ),
       ),

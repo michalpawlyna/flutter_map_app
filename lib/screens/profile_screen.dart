@@ -86,7 +86,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     final newUsername = _usernameController!.text.trim();
 
     final changes = <String, dynamic>{};
-    if (newDisplayName != _serverDisplayName) changes['displayName'] = newDisplayName;
+    if (newDisplayName != _serverDisplayName)
+      changes['displayName'] = newDisplayName;
     if (newUsername != _serverUsername) changes['username'] = newUsername;
 
     if (changes.isEmpty) return;
@@ -105,7 +106,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       } catch (_) {}
 
       setState(() {
-        if (changes.containsKey('displayName')) _serverDisplayName = newDisplayName;
+        if (changes.containsKey('displayName'))
+          _serverDisplayName = newDisplayName;
         if (changes.containsKey('username')) _serverUsername = newUsername;
       });
 
@@ -141,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return StreamBuilder<User?>( 
+    return StreamBuilder<User?>(
       stream: _authService.authStateChanges,
       builder: (context, authSnapshot) {
         final user = authSnapshot.data ?? _auth_service_currentUserFallback();
@@ -150,12 +152,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_sharp),
-              onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
+              onPressed:
+                  widget.onBack ?? () => Navigator.of(context).maybePop(),
               tooltip: 'Powrót',
             ),
             title: const Text(
               'Mój profil',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             centerTitle: true,
             backgroundColor: Colors.transparent,
@@ -164,26 +170,28 @@ class _ProfileScreenState extends State<ProfileScreen>
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Builder(builder: (ctx) {
-                  if (user == null) return const SizedBox.shrink();
-                  final uid = user.uid;
-                  if (_saving) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                child: Builder(
+                  builder: (ctx) {
+                    if (user == null) return const SizedBox.shrink();
+                    final uid = user.uid;
+                    if (_saving) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+                    if (!_hasChanges) return const SizedBox.shrink();
+                    return IconButton(
+                      icon: const Icon(Icons.check, color: Colors.black),
+                      onPressed: () => _saveChanges(uid),
+                      tooltip: 'Zapisz zmiany',
                     );
-                  }
-                  if (!_hasChanges) return const SizedBox.shrink();
-                  return IconButton(
-                    icon: const Icon(Icons.check, color: Colors.black),
-                    onPressed: () => _saveChanges(uid),
-                    tooltip: 'Zapisz zmiany',
-                  );
-                }),
-              )
+                  },
+                ),
+              ),
             ],
           ),
           backgroundColor: Colors.grey[50],
@@ -193,8 +201,14 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: user == null ? _buildNotLoggedIn(context) : _buildProfileForUser(user),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 32,
+                  ),
+                  child:
+                      user == null
+                          ? _buildNotLoggedIn(context)
+                          : _buildProfileForUser(user),
                 ),
               ),
             ),
@@ -215,8 +229,12 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: 160,
           height: 160,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) =>
-              const Icon(Icons.image_not_supported, size: 96, color: Colors.grey),
+          errorBuilder:
+              (_, __, ___) => const Icon(
+                Icons.image_not_supported,
+                size: 96,
+                color: Colors.grey,
+              ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -234,9 +252,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
@@ -284,7 +302,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           displayName = (data['displayName'] ?? '') as String;
         }
 
-        if (_displayNameController == null || _serverDisplayName != displayName) {
+        if (_displayNameController == null ||
+            _serverDisplayName != displayName) {
           _displayNameController?.removeListener(_onControllerChanged);
           _displayNameController?.dispose();
           _displayNameController = TextEditingController(text: displayName);
@@ -308,10 +327,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: CircleAvatar(
                   radius: 42,
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
-                  child: user.photoURL == null
-                      ? const Icon(Icons.person, size: 44, color: Colors.black54)
-                      : null,
+                  backgroundImage:
+                      user.photoURL != null
+                          ? NetworkImage(user.photoURL!)
+                          : null,
+                  child:
+                      user.photoURL == null
+                          ? const Icon(
+                            Icons.person,
+                            size: 44,
+                            color: Colors.black54,
+                          )
+                          : null,
                 ),
               ),
               const SizedBox(height: 18),
@@ -328,9 +355,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               TextFormField(
                 initialValue: email,
                 enabled: false,
-                decoration: _fieldDecoration('').copyWith(
-                  hintText: email.isNotEmpty ? email : 'Brak email',
-                ),
+                decoration: _fieldDecoration(
+                  '',
+                ).copyWith(hintText: email.isNotEmpty ? email : 'Brak email'),
                 style: const TextStyle(color: Colors.black87),
               ),
               const SizedBox(height: 16),
@@ -347,11 +374,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               TextFormField(
                 controller: _displayNameController,
                 decoration: _fieldDecoration('Twoje imię i nazwisko'),
-                buildCounter: (
-                  _,
-                  {required int currentLength, required bool isFocused, int? maxLength}
-                ) =>
-                    null,
+                buildCounter:
+                    (
+                      _, {
+                      required int currentLength,
+                      required bool isFocused,
+                      int? maxLength,
+                    }) => null,
                 validator: (val) {
                   final v = (val ?? '').trim();
                   if (v.isEmpty) return 'Wprowadź imię i nazwisko';
@@ -377,13 +406,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   final v = (val ?? '').trim().toLowerCase();
                   final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
                   if (v.isEmpty) return 'Wprowadź nazwę użytkownika';
-                  if (!regex.hasMatch(v)) return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
+                  if (!regex.hasMatch(v))
+                    return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
                   return null;
                 },
               ),
 
               const SizedBox(height: 18),
-
             ],
           ),
         );

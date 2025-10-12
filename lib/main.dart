@@ -13,6 +13,8 @@ import 'widgets/app_drawer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSize = 100; // max 100 obrazów
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // ~50 MB
 
   await Future.wait([
     dotenv.load(fileName: ".env"),
@@ -22,9 +24,7 @@ void main() async {
     ]),
   ]);
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -54,10 +54,14 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final AuthService _authService = AuthService();
 
-  final ValueNotifier<Map<String, dynamic>?> _routeResultNotifier = ValueNotifier(null);
+  final ValueNotifier<Map<String, dynamic>?> _routeResultNotifier =
+      ValueNotifier(null);
 
   late final List<Widget> _screens = [
-    MapScreen(scaffoldKey: _scaffoldKey, routeResultNotifier: _routeResultNotifier),
+    MapScreen(
+      scaffoldKey: _scaffoldKey,
+      routeResultNotifier: _routeResultNotifier,
+    ),
     ProfileScreen(onBack: () => setState(() => _selectedIndex = 0)),
   ];
 
@@ -69,9 +73,9 @@ class _MainScaffoldState extends State<MainScaffold> {
         authService: _authService,
         onSelect: (index) async {
           if (index == -1) {
-            final result = await Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => const SelectCityScreen(),
-            ));
+            final result = await Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SelectCityScreen()));
 
             if (result is Map<String, dynamic> && result['route'] != null) {
               _routeResultNotifier.value = result;
@@ -83,10 +87,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           setState(() => _selectedIndex = index);
         },
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
     );
   }
 }

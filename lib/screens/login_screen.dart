@@ -34,7 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Text(
           _isRegisterMode ? 'Rejestracja' : 'Logowanie',
           style: const TextStyle(
-              color: Colors.black, fontWeight: FontWeight.w600),
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -48,8 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: _buildAuthForm(),
             ),
           ),
@@ -73,8 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.black, width: 1),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       );
     }
 
@@ -92,9 +95,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 160,
                   height: 160,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.image_not_supported,
-                          size: 96, color: Colors.grey),
+                  errorBuilder:
+                      (_, __, ___) => const Icon(
+                        Icons.image_not_supported,
+                        size: 96,
+                        color: Colors.grey,
+                      ),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -143,8 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: Icon(
                   _showPassword ? Icons.visibility : Icons.visibility_off,
                 ),
-                onPressed: () =>
-                    setState(() => _showPassword = !_showPassword),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
                 tooltip: _showPassword ? 'Ukryj hasło' : 'Pokaż hasło',
               ),
             ),
@@ -177,16 +182,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : Text(_isRegisterMode ? 'Zarejestruj' : 'Zaloguj'),
+              child:
+                  _loading
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                      : Text(_isRegisterMode ? 'Zarejestruj' : 'Zaloguj'),
             ),
           ),
 
@@ -227,9 +233,10 @@ class _LoginScreenState extends State<LoginScreen> {
               label: const Text(
                 "Zaloguj przez Google",
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ),
@@ -239,9 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Center(
             child: TextButton(
               onPressed: _toggleMode,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.black54,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.black54),
               child: Text(
                 _isRegisterMode
                     ? 'Masz już konto? Zaloguj się'

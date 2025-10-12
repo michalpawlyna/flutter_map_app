@@ -7,6 +7,7 @@ class Place {
   final String desc;
   final String address;
   final double lat, lng;
+  final String? photoUrl;
 
   Place({
     required this.id,
@@ -16,6 +17,7 @@ class Place {
     required this.address,
     required this.lat,
     required this.lng,
+    this.photoUrl,
   });
 
   factory Place.fromMap(String id, Map<String, dynamic> data) {
@@ -29,6 +31,7 @@ class Place {
       address: data['address'] as String? ?? '',
       lat: (geo['lat'] as num).toDouble(),
       lng: (geo['long'] as num).toDouble(),
+      photoUrl: data['photoUrl'] as String?,
     );
   }
 }
