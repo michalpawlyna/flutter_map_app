@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -285,10 +286,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: userDocStream,
       builder: (context, snapshot) {
-        String username = '';
-        String displayName = '';
+            String username = '';
+            String displayName = '';
 
-        if (snapshot.hasError) {
+            if (snapshot.hasError) {
           return Column(
             children: [
               const Icon(Icons.error, color: Colors.red, size: 48),
@@ -296,10 +297,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               Text('Błąd podczas pobierania profilu: ${snapshot.error}'),
             ],
           );
-        } else if (snapshot.hasData && snapshot.data!.exists) {
-          final data = snapshot.data!.data()!;
-          username = (data['username'] ?? '') as String;
-          displayName = (data['displayName'] ?? '') as String;
+            } else if (snapshot.hasData && snapshot.data!.exists) {
+              final appUser = AppUser.fromSnapshot(snapshot.data!);
+              username = appUser.username;
+              displayName = appUser.displayName;
         }
 
         if (_displayNameController == null ||

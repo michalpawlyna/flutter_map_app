@@ -41,12 +41,52 @@ class _CitiesList extends StatefulWidget {
 
 class _CitiesListState extends State<_CitiesList> {
   final FirestoreService _fs = FirestoreService();
-  late Future<List<City>> _future;
+  late Future<void> _initFuture;
+  List<City> _cities = [];
+  final Map<String, int> _placesCount = {};
 
   @override
   void initState() {
     super.initState();
-    _future = _fs.getCities();
+    _initFuture = _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final results = await Future.wait([
+      _fs.getCities(),
+      _fs.getAllPlaces(),
+    ]);
+
+    final cities = results[0] as List<City>;
+    final places = results[1] as List<dynamic>;
+
+    final Map<String, int> counts = {};
+    for (final p in places) {
+      // Place model sets cityId from DocumentReference.id
+      try {
+        final cityId = (p as dynamic).cityId as String?;
+        if (cityId != null) {
+          counts[cityId] = (counts[cityId] ?? 0) + 1;
+        }
+      } catch (_) {
+        // ignore malformed place
+      }
+    }
+
+    setState(() {
+      _cities = cities;
+      _placesCount.clear();
+      _placesCount.addAll(counts);
+    });
+  }
+
+  String _placesLabel(int count) {
+    if (count == 1) return 'miejsce';
+    final mod100 = count % 100;
+    final mod10 = count % 10;
+    if (mod100 >= 12 && mod100 <= 14) return 'miejsc';
+    if (mod10 >= 2 && mod10 <= 4) return 'miejsca';
+    return 'miejsc';
   }
 
   Future<void> _onCityTap(String cityId, String cityName) async {
@@ -66,8 +106,8 @@ class _CitiesListState extends State<_CitiesList> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<City>>(
-      future: _future,
+    return FutureBuilder<void>(
+      future: _initFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -77,17 +117,17 @@ class _CitiesListState extends State<_CitiesList> {
           return Center(child: Text('Błąd: ${snapshot.error}'));
         }
 
-        final cities = snapshot.data ?? [];
-        if (cities.isEmpty) {
+        if (_cities.isEmpty) {
           return const Center(child: Text('Brak miast w bazie'));
         }
 
         return ListView.separated(
           padding: const EdgeInsets.all(12),
-          itemCount: cities.length,
+          itemCount: _cities.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
-            final c = cities[index];
+            final c = _cities[index];
+            final count = _placesCount[c.id] ?? 0;
 
             return InkWell(
               onTap: () => _onCityTap(c.id, c.name),
@@ -105,13 +145,26 @@ class _CitiesListState extends State<_CitiesList> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Text(
-                        c.name,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            c.name,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$count ${_placesLabel(count)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
@@ -6,6 +7,9 @@ import 'package:latlong2/latlong.dart';
 import '../models/place.dart';
 import '../services/firestore_service.dart';
 import '../services/location_service.dart';
+import '../services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../services/route_service.dart';
 import 'place_details_sheet_widget.dart';
 import 'package:toastification/toastification.dart';
@@ -15,6 +19,7 @@ class PlacesMarkersWidget extends StatefulWidget {
   final String? cityId;
   final Function(Place)? onMarkerTap;
   final bool enableClustering;
+  final List<String>? visitOrderIds;
 
   final void Function(RouteResult route, Place? place)? onRouteGenerated;
 
@@ -25,6 +30,7 @@ class PlacesMarkersWidget extends StatefulWidget {
     this.onMarkerTap,
     this.enableClustering = true,
     this.onRouteGenerated,
+    this.visitOrderIds,
   }) : super(key: key);
 
   @override
@@ -39,11 +45,59 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   bool _isLoading = true;
   String? _error;
   String? _activePlaceId;
+  final Set<String> _visitedPlaceIds = {};
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
 
   @override
   void initState() {
     super.initState();
     _loadPlaces();
+    _subscribeToUserVisited();
+  }
+
+  void _subscribeToUserVisited() {
+    _userSub?.cancel();
+    final user = AuthService().currentUser;
+    if (user == null) return;
+
+    // listen with error handling: when the user signs out Firestore may
+    // return PERMISSION_DENIED. Provide onError to avoid uncaught async
+    // exceptions which can crash the app.
+    _userSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen((snap) {
+      try {
+        final data = snap.data() ?? <String, dynamic>{};
+        final visited = (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+        if (mounted) {
+          setState(() {
+            _visitedPlaceIds
+              ..clear()
+              ..addAll(visited);
+            _error = null;
+          });
+        }
+      } catch (e) {
+        // Defensive: don't allow unexpected format to crash the listener.
+        if (mounted) {
+          setState(() {
+            _visitedPlaceIds.clear();
+            _error = e.toString();
+          });
+        }
+      }
+    }, onError: (err) {
+      // Common case: Permission denied after sign-out. Clear state and
+      // avoid rethrowing the error.
+      if (mounted) {
+        setState(() {
+          _visitedPlaceIds.clear();
+          _error = err?.toString() ?? 'Błąd subskrypcji użytkownika';
+        });
+      }
+    });
   }
 
   @override
@@ -52,6 +106,12 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     if (oldWidget.cityId != widget.cityId) {
       _loadPlaces();
     }
+  }
+
+  @override
+  void dispose() {
+    _userSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadPlaces() async {
@@ -172,9 +232,11 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                   place: place,
                   mapController: widget.mapController.mapController,
                   onNavigate: (selectedPlace) async {
-                    try {
-                      final userPos =
-                          await LocationService().getCurrentLocation();
+                      try {
+                      await LocationService().ensureLocationEnabledAndPermitted();
+                      Position? last = await Geolocator.getLastKnownPosition();
+                      final userPos = last ??
+                          await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
                       final userLatLng = LatLng(
                         userPos.latitude,
                         userPos.longitude,
@@ -216,11 +278,65 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
         child: AnimatedScale(
           scale: isActive ? 1.2 : 1.0,
           duration: const Duration(milliseconds: 200),
-          child: Image.asset(
-            isActive ? 'assets/marker_active.png' : 'assets/marker.png',
-            width: w,
-            height: h,
-            fit: BoxFit.contain,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Image.asset(
+                isActive ? 'assets/marker_active.png' : 'assets/marker.png',
+                width: w,
+                height: h,
+                fit: BoxFit.contain,
+              ),
+              if (_visitedPlaceIds.contains(place.id))
+                Positioned(
+                  left: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
+                ),
+
+              if ((widget.visitOrderIds?.length ?? 0) > 1)
+                Builder(builder: (ctx) {
+                  final idx = widget.visitOrderIds?.indexOf(place.id) ?? -1;
+                  if (idx < 0) return const SizedBox.shrink();
+                  final display = idx + 1; 
+                  return Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$display',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+            ],
           ),
         ),
       ),

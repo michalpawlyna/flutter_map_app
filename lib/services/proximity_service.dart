@@ -1,4 +1,3 @@
-// lib/services/proximity_service.dart
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import '../models/place.dart';

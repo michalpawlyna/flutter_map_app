@@ -1,5 +1,3 @@
-// lib/widgets/user_location_widget.dart
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -7,7 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
-class UserLocationWidget extends StatelessWidget {
+class UserLocationWidget extends StatefulWidget {
   final Stream<Position> positionStream;
   final double minAccuracyRadius;
 
@@ -18,9 +16,45 @@ class UserLocationWidget extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<UserLocationWidget> createState() => _UserLocationWidgetState();
+}
+
+class _UserLocationWidgetState extends State<UserLocationWidget> {
+  late final Stream<Position> _mergedStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _mergedStream = _createMergedStream();
+  }
+
+  Stream<Position> _createMergedStream() async* {
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        yield last;
+        yield* widget.positionStream;
+        return;
+      }
+
+      try {
+        final current = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.low);
+        yield current;
+      } catch (_) {
+
+      }
+    } catch (_) {
+
+    }
+
+    yield* widget.positionStream;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<Position>(
-      stream: positionStream,
+      stream: _mergedStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox.shrink();
@@ -29,7 +63,7 @@ class UserLocationWidget extends StatelessWidget {
         final position = snapshot.data!;
         final latLng = LatLng(position.latitude, position.longitude);
         final accuracy = position.accuracy;
-        final radius = max(minAccuracyRadius, accuracy);
+        final radius = max(widget.minAccuracyRadius, accuracy);
 
         return Stack(
           children: [
@@ -47,8 +81,9 @@ class UserLocationWidget extends StatelessWidget {
               markers: [
                 Marker(
                   point: latLng,
-                  width: 16,
-                  height: 16,
+                  width: 12,
+                  height: 12,
+                  alignment: Alignment.center,
                   child: Container(
                     decoration: const BoxDecoration(
                       color: Colors.blue,

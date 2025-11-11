@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../models/place.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/tts_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -324,6 +325,44 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             ],
           ),
           const SizedBox(height: 16),
+          // Visited badge: visible only for logged-in users and when the
+          // user's `visitedPlaces` contains this place id.
+          if (_auth.currentUser != null)
+            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(_auth.currentUser!.uid)
+                  .snapshots(),
+              builder: (context, userSnap) {
+                final data = userSnap.data?.data() ?? <String, dynamic>{};
+                final visited = (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+                final bool isVisited = visited.contains(widget.place.id);
+                if (!isVisited) return const SizedBox.shrink();
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.lightBlue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check, color: Colors.blue.shade800, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Odwiedzono',
+                        style: TextStyle(
+                          color: Colors.blue.shade800,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           const Text(
             'O miejscu',
             style: TextStyle(

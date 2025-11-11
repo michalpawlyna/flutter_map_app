@@ -1,4 +1,3 @@
-// lib/widgets/proximity_alert_dialog.dart
 import 'package:flutter/material.dart';
 import '../models/place.dart';
 import '../services/tts_service.dart';

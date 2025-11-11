@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RouteResult {
   final List<LatLng> points;
@@ -16,18 +17,50 @@ class RouteResult {
   });
 }
 
+enum TransportMode { foot, bike, car }
+
+class TransportModeValues {
+  static const Map<TransportMode, String> _toString = {
+    TransportMode.foot: 'foot-walking',
+    TransportMode.bike: 'cycling-regular',
+    TransportMode.car: 'driving-car',
+  };
+
+  static const Map<String, TransportMode> _fromString = {
+    'foot-walking': TransportMode.foot,
+    'cycling-regular': TransportMode.bike,
+    'driving-car': TransportMode.car,
+  };
+
+  static String stringOf(TransportMode mode) => _toString[mode]!;
+
+  static TransportMode fromStringValue(String? s) {
+    if (s == null) return TransportMode.foot;
+    return _fromString[s] ?? TransportMode.foot;
+  }
+}
+
 class RouteService {
-  final String _baseUrl =
-      'https://api.openrouteservice.org/v2/directions/foot-walking/geojson';
+  final String _baseUrl = 'https://api.openrouteservice.org/v2/directions';
   final String? _apiKey = dotenv.env['OPENROUTE_API_KEY'];
+
+  static const String _prefsKeyTransport = 'transport_mode';
+
+  Future<TransportMode> _getSelectedTransportMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final val = prefs.getString(_prefsKeyTransport);
+  return TransportModeValues.fromStringValue(val);
+  }
+
 
   Future<RouteResult> getWalkingRoute(LatLng start, LatLng end) async {
     return getWalkingRouteFromWaypoints([start, end]);
   }
 
   Future<RouteResult> getWalkingRouteFromWaypoints(
-    List<LatLng> waypoints,
-  ) async {
+    List<LatLng> waypoints, {
+    TransportMode? mode,
+  }) async {
     if (_apiKey == null || _apiKey.isEmpty) {
       throw Exception('OpenRouteService API key is not set in .env');
     }
@@ -36,7 +69,9 @@ class RouteService {
       throw Exception('At least two waypoints are required to build a route');
     }
 
-    final url = Uri.parse(_baseUrl);
+  final usedMode = mode ?? await _getSelectedTransportMode();
+  final profile = TransportModeValues.stringOf(usedMode);
+  final url = Uri.parse('$_baseUrl/$profile/geojson');
     final coords = waypoints.map((p) => [p.longitude, p.latitude]).toList();
 
     final body = jsonEncode({'coordinates': coords});

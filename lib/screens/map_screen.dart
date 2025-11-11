@@ -6,6 +6,7 @@ import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:toastification/toastification.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
@@ -16,6 +17,9 @@ import '../services/location_service.dart';
 import '../services/firestore_service.dart';
 import '../services/tts_service.dart';
 import '../services/proximity_service.dart';
+import '../services/auth_service.dart';
+import '../models/achievement.dart';
+import '../widgets/achievement_unlocked_dialog.dart';
 
 import '../services/route_service.dart';
 import '../widgets/route_polyline_widget.dart';
@@ -58,7 +62,7 @@ class _MapScreenState extends State<MapScreen>
 
   RouteResult? _currentRoute;
   String? _destinationName;
-  List<String>? _visitedPlacesNames;
+  List<String>? _visitOrderIds;
 
   @override
   void initState() {
@@ -74,11 +78,11 @@ class _MapScreenState extends State<MapScreen>
     final result = widget.routeResultNotifier?.value;
     if (result == null) return;
 
-    if (result['route'] is RouteResult) {
+        if (result['route'] is RouteResult) {
       setState(() {
         _currentRoute = result['route'] as RouteResult;
         final places = result['places'] as List<dynamic>?;
-        _visitedPlacesNames = places?.cast<String>();
+    _visitOrderIds = places?.map((e) => e['id'] as String? ?? '').where((s) => s.isNotEmpty).toList();
       });
 
       if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
@@ -105,12 +109,18 @@ class _MapScreenState extends State<MapScreen>
   Future<void> _location_service_ensureAndPrepare() async {
     await _locationService.ensureLocationEnabledAndPermitted();
 
-    _positionStream = _location_service_getStreamWithFallback();
+    await _locationService.startUpdates(startMode: LocationMode.normal);
+
+    _positionStream = _locationService.positionStream;
 
     await _initProximity(_positionStream);
 
     try {
-      final initialPos = await _locationService.getCurrentLocation();
+      Position? initialPos = await Geolocator.getLastKnownPosition();
+      if (initialPos == null) {
+        initialPos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+      }
       _initialCenter = LatLng(initialPos.latitude, initialPos.longitude);
       debugPrint('[MapScreen] initial center set to $_initialCenter');
     } catch (e) {
@@ -118,12 +128,6 @@ class _MapScreenState extends State<MapScreen>
     }
   }
 
-  Stream<Position> _location_service_getStreamWithFallback() {
-    return _locationService.getLocationStream(
-      accuracy: LocationAccuracy.bestForNavigation,
-      distanceFilter: 10,
-    );
-  }
 
   Future<void> _initProximity(Stream<Position> positionStream) async {
     final places = await _firestore_service_getAllPlaces();
@@ -133,8 +137,43 @@ class _MapScreenState extends State<MapScreen>
 
     _proximityService = ProximityService(
       places: _places,
-      onDetected: (place) {
+      minEnterTimeSeconds: 15.0,
+      onDetected: (place) async {
         if (!mounted) return;
+
+        final user = AuthService().currentUser;
+        if (user != null) {
+          try {
+            final res = await _firestoreService.reportPlaceVisit(uid: user.uid, place: place);
+            // Do not show toasts about simple visits. If the visit unlocked achievements,
+            // fetch achievement docs and show the unlocked dialog for each.
+            if (res.unlockedAchievementIds.isNotEmpty) {
+              for (final achId in res.unlockedAchievementIds) {
+                final achSnap = await FirebaseFirestore.instance.collection('achievements').doc(achId).get();
+                if (achSnap.exists) {
+                  final ach = Achievement.fromSnapshot(achSnap);
+                  // show a blocking dialog so user can acknowledge the achievement
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => AchievementUnlockedDialog(achievement: ach),
+                  );
+                }
+              }
+            }
+          } catch (e) {
+            toastification.show(
+              context: context,
+              title: Text('Błąd zapisu wizyty: ${e.toString()}'),
+              style: ToastificationStyle.flat,
+              type: ToastificationType.error,
+              autoCloseDuration: const Duration(seconds: 4),
+              alignment: Alignment.bottomCenter,
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            );
+          }
+        }
+
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -173,8 +212,15 @@ class _MapScreenState extends State<MapScreen>
 
   @override
   void dispose() {
+    widget.routeResultNotifier?.removeListener(_handleExternalRouteResult);
+
     _locSub?.cancel();
     _proximityService = null;
+
+    _locationService.dispose().catchError((e) {
+      debugPrint('[MapScreen] error disposing location service: $e');
+    });
+
     _tts.dispose();
     _animatedMapController.dispose();
     super.dispose();
@@ -223,23 +269,26 @@ class _MapScreenState extends State<MapScreen>
                 children: [
                   TileLayer(
                     urlTemplate:
-                        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
+                        'https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png',
                     subdomains: const ['a', 'b', 'c', 'd'],
                     retinaMode: RetinaMode.isHighDensity(context),
                   ),
                   if (_currentRoute != null)
                     RoutePolylineWidget(
                       points: _currentRoute!.points,
-                      strokeWidth: 4.0,
-                      startColor: const Color(0xFFFF3B30),
-                      endColor: const Color(0xFFFF9500),
                     ),
                   PlacesMarkersWidget(
                     mapController: _animatedMapController,
+                    visitOrderIds: _visitOrderIds,
                     onRouteGenerated: (route, place) {
                       setState(() {
                         _currentRoute = route;
-                        _destinationName = place?.name;
+                        _destinationName = null;
+                        if (place != null) {
+                          _visitOrderIds = [place.id];
+                        } else {
+                          _visitOrderIds = null;
+                        }
                       });
                       if (route.points.isNotEmpty) {
                         _animatedMapController.mapController.fitCamera(
@@ -256,18 +305,18 @@ class _MapScreenState extends State<MapScreen>
               ),
               CenterOnUserButton(mapController: _animatedMapController),
               MenuButton(scaffoldKey: widget.scaffoldKey),
-              RouteInfoWidget(
-                route: _currentRoute,
-                destinationName: _destinationName,
-                visitedPlaces: _visitedPlacesNames,
-                onClear: () {
-                  setState(() {
-                    _currentRoute = null;
-                    _destinationName = null;
-                    _visitedPlacesNames = null;
-                  });
-                },
-              ),
+                    RouteInfoWidget(
+                      route: _currentRoute,
+                      destinationName: _destinationName,
+                      locationService: _locationService,
+                      onClear: () {
+                        setState(() {
+                          _currentRoute = null;
+                          _destinationName = null;
+                          _visitOrderIds = null;
+                        });
+                      },
+                    ),
             ],
           ),
         );

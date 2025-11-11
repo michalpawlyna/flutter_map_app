@@ -1,31 +1,173 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
+import '../services/location_service.dart';
 import '../services/route_service.dart';
 
-class RouteInfoWidget extends StatelessWidget {
+class RouteInfoWidget extends StatefulWidget {
   final RouteResult? route;
   final VoidCallback onClear;
   final String? destinationName;
-  final List<String>? visitedPlaces;
+  final LocationService locationService;
 
   const RouteInfoWidget({
     Key? key,
     required this.route,
     required this.onClear,
+    required this.locationService,
     this.destinationName,
-    this.visitedPlaces,
   }) : super(key: key);
 
-  String _formatDuration(double seconds) {
-    final dur = Duration(seconds: seconds.round());
-    final hours = dur.inHours;
-    final minutes = dur.inMinutes.remainder(60);
-    if (hours > 0) return '${hours}h ${minutes}m';
-    return '${minutes} min';
+  @override
+  State<RouteInfoWidget> createState() => _RouteInfoWidgetState();
+}
+
+class _RouteInfoWidgetState extends State<RouteInfoWidget> {
+  static const _prefsKey = 'transport_mode';
+  TransportMode _mode = TransportMode.foot;
+  Timer? _timer;
+  int _elapsedSeconds = 0;
+  bool _isNavigating = false;
+  bool _isPaused = false;
+  double _traveledMeters = 0.0;
+  StreamSubscription<Position>? _posSub;
+  Position? _lastPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMode();
+  }
+
+  @override
+  void didUpdateWidget(covariant RouteInfoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.route != oldWidget.route || widget.destinationName != oldWidget.destinationName) {
+      _loadMode();
+    }
+  }
+
+
+  Future<void> _loadMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final val = prefs.getString(_prefsKey);
+      setState(() {
+        _mode = TransportModeValues.fromStringValue(val);
+      });
+    } catch (_) {
+
+    }
+  }
+
+  void _startNavigation() {
+    if (widget.route == null) return;
+    setState(() {
+      _isNavigating = true;
+      _isPaused = false;
+      _elapsedSeconds = 0;
+      _traveledMeters = 0.0;
+    });
+    try {
+      widget.locationService.setMode(LocationMode.tracking);
+    } catch (_) {}
+
+    _posSub?.cancel();
+    _lastPosition = null;
+    _posSub = widget.locationService.positionStream.listen((pos) {
+      if (!_isNavigating) return;
+      if (_isPaused) {
+        _lastPosition = pos;
+        return;
+      }
+
+      if (_lastPosition != null) {
+        final delta = Geolocator.distanceBetween(
+          _lastPosition!.latitude,
+          _lastPosition!.longitude,
+          pos.latitude,
+          pos.longitude,
+        );
+        setState(() {
+          _traveledMeters = (_traveledMeters + delta).clamp(0.0, widget.route!.distanceMeters);
+        });
+      }
+      _lastPosition = pos;
+    }, onError: (_) {});
+
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_isPaused) return;
+      setState(() {
+        _elapsedSeconds++;
+        if (_traveledMeters >= widget.route!.distanceMeters) {
+          _timer?.cancel();
+          _isNavigating = false;
+        }
+      });
+    });
+  }
+
+  void _togglePause() {
+    if (!_isNavigating) return;
+    setState(() {
+      _isPaused = !_isPaused;
+    });
+    try {
+      widget.locationService.setMode(_isPaused ? LocationMode.normal : LocationMode.tracking);
+    } catch (_) {}
+  }
+
+  Future<void> _finishNavigation() async {
+    _timer?.cancel();
+    await _posSub?.cancel();
+    try {
+      widget.locationService.setMode(LocationMode.normal);
+    } catch (_) {}
+
+    await _saveRouteHistory(_traveledMeters);
+
+    setState(() {
+      _isNavigating = false;
+      _isPaused = false;
+      _elapsedSeconds = 0;
+      _traveledMeters = 0.0;
+      _lastPosition = null;
+    });
+
+    widget.onClear();
+  }
+
+  Future<void> _saveRouteHistory(double meters) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final km = meters / 1000.0;
+      final entry = '${DateTime.now().toIso8601String()}|${km.toStringAsFixed(2)}';
+      final List<String> list = prefs.getStringList('route_history') ?? <String>[];
+      list.insert(0, entry);
+      await prefs.setStringList('route_history', list);
+      final prev = prefs.getDouble('total_km') ?? 0.0;
+      await prefs.setDouble('total_km', (prev + double.parse(km.toStringAsFixed(2))));
+    } catch (_) {
+      
+    }
+  }
+
+
+
+  String _formatElapsed(int seconds) {
+    final h = (seconds ~/ 3600).toString().padLeft(2, '0');
+    final m = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (route == null) return const SizedBox.shrink();
+    if (widget.route == null) return const SizedBox.shrink();
+    const accent = Color(0xFF6C4AE2);
 
     return Positioned(
       bottom: 16,
@@ -33,10 +175,13 @@ class RouteInfoWidget extends StatelessWidget {
       right: 16,
       child: SafeArea(
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
@@ -52,43 +197,105 @@ class RouteInfoWidget extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.red[100],
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.place,
-                      color: Color(0xFFF44336),
-                      size: 24,
+                  Expanded(
+                    child: Text(
+                      widget.destinationName != null && widget.destinationName!.isNotEmpty
+                          ? widget.destinationName!
+                          : 'Panel nawigacji',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: widget.onClear,
+                    icon: Icon(Icons.close, color: Colors.grey.shade600),
+                    tooltip: 'Zamknij',
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          destinationName != null && destinationName!.isNotEmpty
-                              ? destinationName!
-                              : 'Trasa',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        Text('Czas upłynął',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            )),
                         const SizedBox(height: 6),
                         Text(
-                          'Szczegóły trasy',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                          _formatElapsed(_elapsedSeconds),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text('Przebyty dystans',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            )),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${(_traveledMeters / 1000.0).toStringAsFixed(2).replaceAll('.', ',')} km',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Transport',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            )),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              _mode == TransportMode.car
+                                  ? Icons.directions_car
+                                  : _mode == TransportMode.bike
+                                      ? Icons.pedal_bike
+                                      : Icons.directions_walk,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ],
@@ -97,159 +304,62 @@ class RouteInfoWidget extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 12),
-              if (visitedPlaces != null && visitedPlaces!.isNotEmpty) ...[
-                Text(
-                  'Wybrane miejsca:',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children:
-                        visitedPlaces!
-                            .map(
-                              (n) => Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  n,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+              const SizedBox(height: 14),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: !_isNavigating
+                        ? ElevatedButton(
+                            onPressed: _startNavigation,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Start',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _togglePause,
+                                  icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
+                                  label: Text(_isPaused ? 'Wznów' : 'Pauza'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ),
-                            )
-                            .toList(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dystans',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                width: 140,
+                                child: OutlinedButton(
+                                  onPressed: _finishNavigation,
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.grey.shade300),
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text('Zakończ', style: TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${(route!.distanceMeters / 1000).toStringAsFixed(2)} km',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Czas',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _formatDuration(route!.durationSeconds),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: onClear,
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        side: BorderSide(color: Colors.grey.withOpacity(0.1)),
-                        backgroundColor: Colors.red.shade50,
-                        foregroundColor: Colors.red.shade700,
-                      ),
-                      child: const Icon(Icons.close, size: 20),
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: logika rozpoczęcia trasy
-                      },
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('Start'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -258,5 +368,12 @@ class RouteInfoWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _posSub?.cancel();
+    super.dispose();
   }
 }

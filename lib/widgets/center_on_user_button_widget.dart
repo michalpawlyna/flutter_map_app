@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
@@ -24,7 +23,13 @@ class CenterOnUserButton extends StatelessWidget {
       );
     }
     try {
-      final pos = await LocationService().getCurrentLocation();
+      await LocationService().ensureLocationEnabledAndPermitted();
+
+      Position? pos = await Geolocator.getLastKnownPosition();
+      if (pos == null) {
+        pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      }
+
       if (last == null ||
           Geolocator.distanceBetween(
                 last.latitude,
@@ -53,7 +58,7 @@ class CenterOnUserButton extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.black,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -63,7 +68,7 @@ class CenterOnUserButton extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.my_location, color: Colors.black, size: 24),
+            child: const Icon(Icons.navigation_rounded, color: Colors.white, size: 24),
           ),
         ),
       ),

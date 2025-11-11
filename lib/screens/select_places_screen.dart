@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/place.dart';
 import '../services/firestore_service.dart';
@@ -102,7 +103,9 @@ class _PlacesListState extends State<_PlacesList> {
 
   LatLng? _currentLocation;
 
-  static const int maxSelection = 5; //Max places
+  bool _loading = false;
+
+  static const int maxSelection = 5;
 
   @override
   void initState() {
@@ -115,7 +118,12 @@ class _PlacesListState extends State<_PlacesList> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        final pos = await LocationService().getCurrentLocation();
+        await LocationService().ensureLocationEnabledAndPermitted();
+
+        final Position? last = await Geolocator.getLastKnownPosition();
+        final Position pos = last ??
+            await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
         if (mounted) {
           setState(() {
             _currentLocation = LatLng(pos.latitude, pos.longitude);
@@ -343,15 +351,20 @@ class _PlacesListState extends State<_PlacesList> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: widget.selectedPlaceIds.isEmpty
+              onPressed: (widget.selectedPlaceIds.isEmpty || _loading)
                   ? null
                   : () async {
-                      final snapshotPlaces = await _future;
-                      final selectedPlaces = snapshotPlaces
-                          .where((p) => widget.selectedPlaceIds.contains(p.id))
-                          .toList();
+                      setState(() => _loading = true);
                       try {
-                        final pos = await LocationService().getCurrentLocation();
+                        final snapshotPlaces = await _future;
+                        final selectedPlaces = snapshotPlaces
+                            .where((p) => widget.selectedPlaceIds.contains(p.id))
+                            .toList();
+                        await LocationService().ensureLocationEnabledAndPermitted();
+                        Position? pos = await Geolocator.getLastKnownPosition();
+                        if (pos == null) {
+                          pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+                        }
                         final start = LatLng(pos.latitude, pos.longitude);
 
                         final List<Place> remaining = List.from(
@@ -380,22 +393,43 @@ class _PlacesListState extends State<_PlacesList> {
                         final route = await RouteService()
                             .getWalkingRouteFromWaypoints(waypoints);
 
-                        Navigator.of(context).pop({
-                          'route': route,
-                          'places': visitOrder.map((p) => p.name).toList(),
-                        });
+                        if (mounted) {
+                          Navigator.of(context).pop({
+                            'route': route,
+                            'places': visitOrder
+                                .map((p) => {
+                                      'id': p.id,
+                                      'name': p.name,
+                                      'photoUrl': p.photoUrl ?? '',
+                                    })
+                                .toList(),
+                          });
+                        }
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Błąd tworzenia trasy: ${e.toString()}',
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Błąd tworzenia trasy: ${e.toString()}',
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _loading = false);
                       }
                     },
-              icon: const Icon(Icons.route),
-              label: const Text('Stwórz trasę'),
+              icon: _loading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : const Icon(Icons.route),
+              label: Text(_loading ? 'Tworzenie trasy...' : 'Stwórz trasę'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,

@@ -1,6 +1,7 @@
 // auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -24,13 +25,20 @@ class AuthService {
     final user = creds.user;
     if (user != null) {
       final usersRef = _firestore.collection('users').doc(user.uid);
-      await usersRef.set({
-        'uid': user.uid,
-        'email': email,
-        'username': '',
-        'displayName': user.displayName ?? '',
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      final appUser = AppUser(
+        uid: user.uid,
+        email: email,
+        username: '',
+        displayName: user.displayName ?? '',
+      );
+
+      final map = appUser.toMap(includeServerTimestamp: true);
+      map.putIfAbsent('totalPlacesVisited', () => 0);
+      map.putIfAbsent('achievementsSummary', () => <String, dynamic>{});
+      map.putIfAbsent('achievementsUnlockedAt', () => <String, dynamic>{});
+  map.putIfAbsent('visitedPlaces', () => <String>[]);
+
+      await usersRef.set(map, SetOptions(merge: true));
     }
     return user;
   }
@@ -96,14 +104,21 @@ class AuthService {
           .doc(user.uid);
       final snap = await usersRef.get();
       if (!snap.exists) {
-        await usersRef.set({
-          'uid': user.uid,
-          'email': user.email ?? '',
-          'username': '',
-          'displayName': user.displayName ?? googleAccount.displayName ?? '',
-          'photoURL': user.photoURL ?? googleAccount.photoUrl ?? '',
-          'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        final appUser = AppUser(
+          uid: user.uid,
+          email: user.email ?? '',
+          username: '',
+          displayName: user.displayName ?? googleAccount.displayName ?? '',
+          photoURL: user.photoURL ?? googleAccount.photoUrl ?? '',
+        );
+
+        final map = appUser.toMap(includeServerTimestamp: true);
+        map.putIfAbsent('totalPlacesVisited', () => 0);
+        map.putIfAbsent('achievementsSummary', () => <String, dynamic>{});
+        map.putIfAbsent('achievementsUnlockedAt', () => <String, dynamic>{});
+  map.putIfAbsent('visitedPlaces', () => <String>[]);
+
+        await usersRef.set(map, SetOptions(merge: true));
       } else {
         final data = snap.data() as Map<String, dynamic>? ?? {};
         final update = <String, dynamic>{};

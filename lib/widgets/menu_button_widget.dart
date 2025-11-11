@@ -17,7 +17,7 @@ class MenuButton extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.black,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -27,7 +27,7 @@ class MenuButton extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.menu, color: Colors.black, size: 24),
+            child: const Icon(Icons.menu, color: Colors.white, size: 24),
           ),
         ),
       ),
