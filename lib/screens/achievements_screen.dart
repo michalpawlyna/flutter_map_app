@@ -27,11 +27,11 @@ class AchievementsScreen extends StatelessWidget {
         ),
       ),
       centerTitle: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       foregroundColor: Colors.black,
       elevation: 0,
     ),
-    backgroundColor: Colors.grey[50],
+    backgroundColor: Colors.white,
     body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance.collection('achievements').snapshots(),
       builder: (context, snap) {
@@ -71,7 +71,7 @@ class AchievementsScreen extends StatelessWidget {
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.grey[200],
+                          color: Colors.amber[100],
                         ),
                         child: const Icon(
                           Icons.lock_outline,
@@ -164,9 +164,9 @@ class AchievementsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             side: BorderSide(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.grey.shade300,
                             ),
-                            backgroundColor: Colors.grey.shade100,
+                            backgroundColor: Colors.grey.shade50,
                             foregroundColor: Colors.black87,
                           ),
                           child: const Text(
@@ -284,11 +284,11 @@ class AchievementsScreen extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: earned ? Colors.green.shade500 : Colors.grey.shade100,
-                width: 1,
+                color: earned ? Colors.green.shade300 : Colors.grey.shade200,
+                width: 1.5,
               ),
             ),
             child: Row(

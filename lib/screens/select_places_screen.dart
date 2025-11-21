@@ -40,9 +40,9 @@ class _SelectPlacesScreenState extends State<SelectPlacesScreen> {
             onPressed: () => Navigator.of(context).maybePop(),
             tooltip: 'Powrót',
           ),
-          title: Text(
+          title: const Text(
             'Wybierz miejsca',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.w600,
               fontSize: 20,
@@ -231,20 +231,22 @@ class _PlacesListState extends State<_PlacesList> {
                     opacity: canSelect ? 1.0 : 0.5,
                     child: InkWell(
                       onTap: canSelect ? () => _toggleSelectionById(key) : null,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       child: Container(
                         constraints: const BoxConstraints(minHeight: 90),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: selected ? Colors.black : Colors.grey.shade200,
+                            width: 1.5,
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
+                            // Image / avatar
                             Container(
                               width: 52,
                               height: 52,
@@ -287,6 +289,7 @@ class _PlacesListState extends State<_PlacesList> {
 
                             const SizedBox(width: 14),
 
+                            // Name + distance (with icon)
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,14 +304,24 @@ class _PlacesListState extends State<_PlacesList> {
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  
                                   if (distanceMeters != null)
-                                    Text(
-                                      _formatDistance(distanceMeters),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black54,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.place_outlined,
+                                          size: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatDistance(distanceMeters),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                 ],
                               ),
@@ -316,16 +329,17 @@ class _PlacesListState extends State<_PlacesList> {
 
                             const SizedBox(width: 8),
 
+                            // Custom checkbox
                             Container(
-                              width: 24,
-                              height: 24,
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
                                 color: selected ? Colors.black : Colors.transparent,
                                 border: Border.all(
                                   color: selected ? Colors.black : Colors.grey,
                                   width: 2,
                                 ),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: selected
                                   ? const Icon(

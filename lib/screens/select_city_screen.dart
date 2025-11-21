@@ -23,7 +23,7 @@ class SelectCityScreen extends StatelessWidget {
         ),
       ),
       centerTitle: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       foregroundColor: Colors.black,
       elevation: 0,
     ),
@@ -122,28 +122,29 @@ class _CitiesListState extends State<_CitiesList> {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           itemCount: _cities.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final c = _cities[index];
             final count = _placesCount[c.id] ?? 0;
 
             return InkWell(
               onTap: () => _onCityTap(c.id, c.name),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 18,
-                ),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Nazwa i liczba miejsc
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,27 +153,43 @@ class _CitiesListState extends State<_CitiesList> {
                             c.name,
                             style: const TextStyle(
                               fontSize: 17,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               color: Colors.black87,
+                              letterSpacing: 0.2,
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            '$count ${_placesLabel(count)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.black54,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.place_outlined,
+                                size: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$count ${_placesLabel(count)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(width: 8),
-
-                    Icon(
-                      Icons.chevron_right,
-                      color: Colors.grey.withOpacity(0.6),
+                    // Strzałka po prawej
+                    Container(
+                      width: 32,
+                      height: 32,
+                      child: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.grey.shade700,
+                        size: 14,
+                      ),
                     ),
                   ],
                 ),

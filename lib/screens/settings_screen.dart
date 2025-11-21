@@ -90,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.white,
+            color: isSelected ? Colors.black : const Color(0xFFF8F9FA),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? Colors.black : Colors.grey.shade200,
@@ -152,11 +152,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           centerTitle: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
         ),
-        backgroundColor: Colors.grey[50],
+        backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16),

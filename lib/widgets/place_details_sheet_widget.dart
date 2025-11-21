@@ -61,14 +61,17 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   }
 
   Future<void> _toggleFavourite() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+  final user = _auth.currentUser;
+  if (user == null) return;
 
-    setState(() => _checkingFav = true);
-    try {
-      if (_isFavorited) {
-        await _firestore.removePlaceFromFavourites(user.uid, widget.place.id);
-        if (mounted) setState(() => _isFavorited = false);
+  // Optymistyczna aktualizacja UI
+  final previousState = _isFavorited;
+  setState(() => _isFavorited = !_isFavorited);
+
+  try {
+    if (previousState) {
+      await _firestore.removePlaceFromFavourites(user.uid, widget.place.id);
+      if (mounted) {
         toastification.show(
           context: context,
           title: const Text('Usunięto z ulubionych'),
@@ -78,9 +81,10 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           alignment: Alignment.bottomCenter,
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
         );
-      } else {
-        await _firestore.addPlaceToFavourites(user.uid, widget.place.id);
-        if (mounted) setState(() => _isFavorited = true);
+      }
+    } else {
+      await _firestore.addPlaceToFavourites(user.uid, widget.place.id);
+      if (mounted) {
         toastification.show(
           context: context,
           title: const Text('Dodano do ulubionych'),
@@ -91,7 +95,11 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
         );
       }
-    } catch (e) {
+    }
+  } catch (e) {
+    // W przypadku błędu przywróć poprzedni stan
+    if (mounted) {
+      setState(() => _isFavorited = previousState);
       toastification.show(
         context: context,
         title: Text('Błąd: ${e.toString()}'),
@@ -102,8 +110,8 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
       );
     }
-    if (mounted) setState(() => _checkingFav = false);
   }
+}
 
   String _composeSpeechText() {
     final b = StringBuffer();
@@ -306,22 +314,20 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                 ),
               ),
               if (_auth.currentUser != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: _checkingFav
-                        ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
-                        : IconButton(
-                            onPressed: _toggleFavourite,
-                            icon: Icon(
-                              _isFavorited ? Icons.favorite : Icons.favorite_border,
-                              color: _isFavorited ? Colors.red : Colors.black54,
-                            ),
-                          ),
-                  ),
-                ),
+  Padding(
+    padding: const EdgeInsets.only(left: 8.0),
+    child: SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        onPressed: _toggleFavourite,
+        icon: Icon(
+          _isFavorited ? Icons.favorite : Icons.favorite_border,
+          color: _isFavorited ? Colors.red : Colors.black54,
+        ),
+      ),
+    ),
+  ),
             ],
           ),
           const SizedBox(height: 16),
