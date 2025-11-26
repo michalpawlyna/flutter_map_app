@@ -7,6 +7,7 @@ import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/achievements_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/favourite_places_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final AuthService authService;
@@ -189,6 +190,18 @@ class AppDrawer extends StatelessWidget {
                     },
                   ),
                   _DrawerItem(
+                    icon: Icons.favorite_border,
+                    title: 'Ulubione miejsca',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const FavouritePlacesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerItem(
                     icon: Icons.emoji_events_outlined,
                     title: 'Osiągnięcia',
                     onTap: () {
@@ -221,7 +234,7 @@ class AppDrawer extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: user != null
-                    ? ElevatedButton.icon(
+                    ? TextButton.icon(
                         onPressed: () async {
                           final confirm = await showDialog<bool>(
                             context: context,
@@ -241,12 +254,12 @@ class AppDrawer extends StatelessWidget {
                                       width: 56,
                                       height: 56,
                                       decoration: BoxDecoration(
-                                        color: Colors.red.shade600,
+                                        color: Colors.grey.shade200,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.logout,
-                                        color: Colors.white,
+                                        color: Colors.grey.shade700,
                                         size: 28,
                                       ),
                                     ),
@@ -274,15 +287,19 @@ class AppDrawer extends StatelessWidget {
                                       children: [
                                         Expanded(
                                           child: ElevatedButton(
-                                            onPressed: () => Navigator.of(ctx).pop(false),
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(false),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.grey.shade100,
+                                              backgroundColor:
+                                                  Colors.grey.shade100,
                                               foregroundColor: Colors.black87,
                                               elevation: 0,
-                                              padding: const EdgeInsets.symmetric(
-                                                  vertical: 12),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 12),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               textStyle: const TextStyle(
                                                 fontWeight: FontWeight.w600,
@@ -293,16 +310,20 @@ class AppDrawer extends StatelessWidget {
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
-                                          child: ElevatedButton(
-                                            onPressed: () => Navigator.of(ctx).pop(true),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.black,
-                                              foregroundColor: Colors.white,
+                                          child: TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(true),
+                                            style: TextButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.red.withOpacity(0.1),
+                                              foregroundColor: Colors.red,
                                               elevation: 0,
-                                              padding: const EdgeInsets.symmetric(
-                                                  vertical: 12),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 12),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               textStyle: const TextStyle(
                                                 fontWeight: FontWeight.w700,
@@ -333,26 +354,31 @@ class AppDrawer extends StatelessWidget {
                               type: ToastificationType.success,
                               autoCloseDuration: const Duration(seconds: 3),
                               alignment: Alignment.bottomCenter,
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                              margin:
+                                  const EdgeInsets.fromLTRB(12, 0, 12, 24),
                             );
                           } catch (e) {
                             toastification.show(
                               context: context,
-                              title: Text('Błąd wylogowania: ${e.toString()}'),
+                              title:
+                                  Text('Błąd wylogowania: ${e.toString()}'),
                               style: ToastificationStyle.flat,
                               type: ToastificationType.error,
                               autoCloseDuration: const Duration(seconds: 4),
                               alignment: Alignment.bottomCenter,
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                              margin:
+                                  const EdgeInsets.fromLTRB(12, 0, 12, 24),
                             );
                           }
                         },
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Wyloguj'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red, // plain red background
-                          foregroundColor: Colors.white, // white text & icon
-                          elevation: 0,
+                        icon: Icon(Icons.logout, color: Colors.grey[700]),
+                        label: Text(
+                          'Wyloguj',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),

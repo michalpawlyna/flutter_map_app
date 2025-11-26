@@ -9,6 +9,8 @@ import '../services/firestore_service.dart';
 import '../services/location_service.dart';
 import '../services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/route_service.dart';
 import 'place_details_sheet_widget.dart';
@@ -47,18 +49,32 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   String? _activePlaceId;
   final Set<String> _visitedPlaceIds = {};
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
+  StreamSubscription<User?>? _authSub;
 
   @override
   void initState() {
     super.initState();
     _loadPlaces();
     _subscribeToUserVisited();
+    // Re-subscribe when auth state changes so widget reacts to login/logout
+    _authSub = AuthService().authStateChanges.listen((_) {
+      _subscribeToUserVisited();
+    });
   }
 
   void _subscribeToUserVisited() {
     _userSub?.cancel();
     final user = AuthService().currentUser;
-    if (user == null) return;
+    if (user == null) {
+      // no user: clear visited set and clear any previous error so markers remain visible
+      if (mounted) {
+        setState(() {
+          _visitedPlaceIds.clear();
+          _error = null;
+        });
+      }
+      return;
+    }
 
     // listen with error handling: when the user signs out Firestore may
     // return PERMISSION_DENIED. Provide onError to avoid uncaught async
@@ -89,13 +105,20 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
         }
       }
     }, onError: (err) {
-      // Common case: Permission denied after sign-out. Clear state and
-      // avoid rethrowing the error.
+      // Treat permission-denied specially (happens on sign-out) — clear visited
+      // and keep showing markers instead of hiding them.
       if (mounted) {
-        setState(() {
-          _visitedPlaceIds.clear();
-          _error = err?.toString() ?? 'Błąd subskrypcji użytkownika';
-        });
+        if (err is FirebaseException && err.code == 'permission-denied') {
+          setState(() {
+            _visitedPlaceIds.clear();
+            _error = null;
+          });
+        } else {
+          setState(() {
+            _visitedPlaceIds.clear();
+            _error = err?.toString() ?? 'Błąd subskrypcji użytkownika';
+          });
+        }
       }
     });
   }
@@ -111,6 +134,7 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   @override
   void dispose() {
     _userSub?.cancel();
+    _authSub?.cancel();
     super.dispose();
   }
 
@@ -292,12 +316,16 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                   left: -2,
                   bottom: -2,
                   child: Container(
-                    width: 12,
-                    height: 12,
+                    width: 18,
+                    height: 18,
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: Colors.lightBlue[50],
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Icon(
+                      Icons.check,
+                      color: Colors.blue.shade800,
+                      size: 12,
                     ),
                   ),
                 ),

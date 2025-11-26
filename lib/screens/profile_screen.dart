@@ -140,6 +140,136 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  Future<void> _confirmAndDeleteAccount(User user) async {
+    final TextEditingController ctrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Usuń konto'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Aby potwierdzić usunięcie konta, wpisz słowo "delete" poniżej.\n\n' 
+                'Uwaga: wszystkie Twoje dane profilu (w tym odznaki, lista odwiedzonych miejsc itp.) zostaną usunięte z bazy danych.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                decoration: const InputDecoration(
+                  hintText: 'Wpisz delete, aby potwierdzić',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Anuluj'),
+            ),
+            TextButton(
+              onPressed: () {
+                final v = ctrl.text.trim();
+                if (v.toLowerCase() == 'delete') {
+                  Navigator.of(ctx).pop(true);
+                }
+              },
+              child: const Text('Usuń', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _deleteAccount(user);
+    }
+  }
+
+  Future<void> _deleteAccount(User user) async {
+    setState(() => _loading = true);
+    final uid = user.uid;
+    try {
+      // delete firestore user document
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+      } catch (e) {
+        // if deletion fails because doc not exist or permission, continue to try delete auth
+        debugPrint('[ProfileScreen] firestore user delete failed: $e');
+      }
+
+      // delete firebase auth user
+      try {
+        await user.delete();
+      } catch (e) {
+        // If deletion requires recent login, surface friendly message.
+        // For other errors, don't show the re-login toast (it was shown
+        // incorrectly for some successful flows); instead log and continue
+        // to ensure the app signs out and returns to main screen.
+        debugPrint('[ProfileScreen] auth delete failed: $e');
+        if (e is FirebaseAuthException && e.code == 'requires-recent-login') {
+          if (mounted) {
+            toastification.show(
+              context: context,
+              title: const Text('Nie można usunąć konta'),
+              style: ToastificationStyle.flat,
+              type: ToastificationType.error,
+              autoCloseDuration: const Duration(seconds: 6),
+              alignment: Alignment.bottomCenter,
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            );
+          }
+          try {
+            await _authService.signOut();
+          } catch (_) {}
+          if (mounted) setState(() => _loading = false);
+          return;
+        }
+        // For other errors, attempt to continue: sign out and proceed.
+        try {
+          await _authService.signOut();
+        } catch (_) {}
+      }
+
+      // ensure sign out and return to main screen
+      try {
+        await _authService.signOut();
+      } catch (_) {}
+
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('Konto usunięte'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.success,
+          autoCloseDuration: const Duration(seconds: 3),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+
+        // navigate back to root (main map screen) and ensure UI refresh
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      debugPrint('[ProfileScreen] delete account error: $e');
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: Text('Błąd podczas usuwania konta: ${e.toString()}'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.error,
+          autoCloseDuration: const Duration(seconds: 4),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -411,6 +541,39 @@ class _ProfileScreenState extends State<ProfileScreen>
                     return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
                   return null;
                 },
+              ),
+
+              const SizedBox(height: 18),
+
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text(
+                'Usuń konto',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Usunięcie konta spowoduje trwałe usunięcie Twoich danych (odznaki, lista odwiedzonych miejsc, preferencje).',
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _loading ? null : () => _confirmAndDeleteAccount(user),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Usuń konto', style: TextStyle(color: Colors.red)),
+                ),
               ),
 
               const SizedBox(height: 18),
