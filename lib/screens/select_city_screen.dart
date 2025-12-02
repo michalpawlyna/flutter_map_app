@@ -62,14 +62,14 @@ class _CitiesListState extends State<_CitiesList> {
 
     final Map<String, int> counts = {};
     for (final p in places) {
-      // Place model sets cityId from DocumentReference.id
+
       try {
         final cityId = (p as dynamic).cityId as String?;
         if (cityId != null) {
           counts[cityId] = (counts[cityId] ?? 0) + 1;
         }
       } catch (_) {
-        // ignore malformed place
+
       }
     }
 
@@ -144,7 +144,6 @@ class _CitiesListState extends State<_CitiesList> {
                 ),
                 child: Row(
                   children: [
-                    // Nazwa i liczba miejsc
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,7 +180,6 @@ class _CitiesListState extends State<_CitiesList> {
                       ),
                     ),
 
-                    // Strzałka po prawej
                     Container(
                       width: 32,
                       height: 32,

@@ -107,6 +107,12 @@ class FirestoreService {
 
     return PlaceVisitResult(created: true, unlockedAchievementIds: unlocked);
   }
+
+  Future<void> updateUserEquippedAchievements(String uid, List<String> achievementIds) async {
+    await _db.collection('users').doc(uid).update({
+      'equippedAchievements': achievementIds,
+    });
+  }
 }
 
 /// Result returned by [reportPlaceVisit]

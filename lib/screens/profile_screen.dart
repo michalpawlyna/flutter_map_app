@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/achievement.dart';
 import '../models/user.dart';
+import '../screens/manage_achievements_screen.dart';
+import '../widgets/achievement_showcase_widget.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -32,6 +35,28 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _loading = false;
   bool _saving = false;
 
+  late Future<List<Achievement>> _achievementsFuture;
+
+  late FocusNode _displayNameFocusNode;
+  late FocusNode _usernameFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _achievementsFuture = _loadAchievements();
+
+    _displayNameFocusNode = FocusNode()..addListener(_onFocusChanged);
+    _usernameFocusNode = FocusNode()..addListener(_onFocusChanged);
+  }
+
+  Future<List<Achievement>> _loadAchievements() async {
+    final achievementsSnapshot =
+        await FirebaseFirestore.instance.collection('achievements').get();
+    return achievementsSnapshot.docs
+        .map((doc) => Achievement.fromSnapshot(doc))
+        .toList();
+  }
+
   void _attachListeners() {
     _displayNameController?.removeListener(_onControllerChanged);
     _usernameController?.removeListener(_onControllerChanged);
@@ -43,19 +68,32 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (mounted) setState(() {});
   }
 
+  void _onFocusChanged() {
+
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     _displayNameController?.removeListener(_onControllerChanged);
     _usernameController?.removeListener(_onControllerChanged);
     _displayNameController?.dispose();
     _usernameController?.dispose();
+
+
+    _displayNameFocusNode.removeListener(_onFocusChanged);
+    _displayNameFocusNode.dispose();
+    _usernameFocusNode.removeListener(_onFocusChanged);
+    _usernameFocusNode.dispose();
+
     super.dispose();
   }
 
-  InputDecoration _fieldDecoration(String hint) {
+  InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.black54),
+      labelText: label,
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      isDense: true,
       filled: true,
       fillColor: Colors.grey[200],
       border: OutlineInputBorder(
@@ -68,7 +106,34 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 1),
+        borderSide: const BorderSide(color: Colors.black, width: 1.2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  InputDecoration _cardFieldDecoration(String label, {bool focused = false}) {
+    final labelColor = focused ? Colors.black : Colors.grey.shade700;
+    return InputDecoration(
+      labelText: label,
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      floatingLabelStyle:
+          TextStyle(color: labelColor, fontWeight: FontWeight.w600),
+      labelStyle: TextStyle(color: labelColor),
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.black, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -152,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Aby potwierdzić usunięcie konta, wpisz słowo "delete" poniżej.\n\n' 
+                'Aby potwierdzić usunięcie konta, wpisz słowo "delete" poniżej.\n\n'
                 'Uwaga: wszystkie Twoje dane profilu (w tym odznaki, lista odwiedzonych miejsc itp.) zostaną usunięte z bazy danych.',
               ),
               const SizedBox(height: 12),
@@ -192,22 +257,19 @@ class _ProfileScreenState extends State<ProfileScreen>
     setState(() => _loading = true);
     final uid = user.uid;
     try {
-      // delete firestore user document
+
       try {
         await FirebaseFirestore.instance.collection('users').doc(uid).delete();
       } catch (e) {
-        // if deletion fails because doc not exist or permission, continue to try delete auth
+
         debugPrint('[ProfileScreen] firestore user delete failed: $e');
       }
 
-      // delete firebase auth user
+
       try {
         await user.delete();
       } catch (e) {
-        // If deletion requires recent login, surface friendly message.
-        // For other errors, don't show the re-login toast (it was shown
-        // incorrectly for some successful flows); instead log and continue
-        // to ensure the app signs out and returns to main screen.
+
         debugPrint('[ProfileScreen] auth delete failed: $e');
         if (e is FirebaseAuthException && e.code == 'requires-recent-login') {
           if (mounted) {
@@ -227,13 +289,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (mounted) setState(() => _loading = false);
           return;
         }
-        // For other errors, attempt to continue: sign out and proceed.
+
         try {
           await _authService.signOut();
         } catch (_) {}
       }
 
-      // ensure sign out and return to main screen
+
       try {
         await _authService.signOut();
       } catch (_) {}
@@ -249,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
         );
 
-        // navigate back to root (main map screen) and ensure UI refresh
+
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
@@ -277,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return StreamBuilder<User?>(
       stream: _authService.authStateChanges,
       builder: (context, authSnapshot) {
-        final user = authSnapshot.data ?? _auth_service_currentUserFallback();
+        final user = authSnapshot.data ?? _authService.currentUser;
 
         return Scaffold(
           appBar: AppBar(
@@ -316,7 +378,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     }
                     if (!_hasChanges) return const SizedBox.shrink();
                     return IconButton(
-                      icon: const Icon(Icons.check, color: Colors.black),
+                      icon: const Icon(Icons.check, color: Colors.green),
                       onPressed: () => _saveChanges(uid),
                       tooltip: 'Zapisz zmiany',
                     );
@@ -327,19 +389,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           backgroundColor: Colors.grey[50],
           body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 32,
-                  ),
-                  child:
-                      user == null
-                          ? _buildNotLoggedIn(context)
-                          : _buildProfileForUser(user),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: user == null
+                      ? _buildNotLoggedIn(context)
+                      : _buildProfileForUser(user),
                 ),
               ),
             ),
@@ -348,8 +407,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
     );
   }
-
-  User? _auth_service_currentUserFallback() => _authService.currentUser;
 
   Widget _buildNotLoggedIn(BuildContext context) {
     return Column(
@@ -360,12 +417,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: 160,
           height: 160,
           fit: BoxFit.contain,
-          errorBuilder:
-              (_, __, ___) => const Icon(
-                Icons.image_not_supported,
-                size: 96,
-                color: Colors.grey,
-              ),
+          errorBuilder: (_, __, ___) => const Icon(
+            Icons.image_not_supported,
+            size: 96,
+            color: Colors.grey,
+          ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -416,10 +472,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: userDocStream,
       builder: (context, snapshot) {
-            String username = '';
-            String displayName = '';
-
-            if (snapshot.hasError) {
+        if (snapshot.hasError) {
           return Column(
             children: [
               const Icon(Icons.error, color: Colors.red, size: 48),
@@ -427,11 +480,15 @@ class _ProfileScreenState extends State<ProfileScreen>
               Text('Błąd podczas pobierania profilu: ${snapshot.error}'),
             ],
           );
-            } else if (snapshot.hasData && snapshot.data!.exists) {
-              final appUser = AppUser.fromSnapshot(snapshot.data!);
-              username = appUser.username;
-              displayName = appUser.displayName;
         }
+
+        AppUser? appUser;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          appUser = AppUser.fromSnapshot(snapshot.data!);
+        }
+
+        final displayName = appUser?.displayName ?? '';
+        final username = appUser?.username ?? '';
 
         if (_displayNameController == null ||
             _serverDisplayName != displayName) {
@@ -459,112 +516,160 @@ class _ProfileScreenState extends State<ProfileScreen>
                   radius: 42,
                   backgroundColor: Colors.grey[200],
                   backgroundImage:
-                      user.photoURL != null
-                          ? NetworkImage(user.photoURL!)
-                          : null,
-                  child:
-                      user.photoURL == null
-                          ? const Icon(
-                            Icons.person,
-                            size: 44,
-                            color: Colors.black54,
-                          )
-                          : null,
+                      user.photoURL != null ? NetworkImage(user.photoURL!) : null,
+                  child: user.photoURL == null
+                      ? const Icon(
+                          Icons.person,
+                          size: 44,
+                          color: Colors.black54,
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 18),
 
-              const Text(
-                'E-mail',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              if (displayName.isNotEmpty || email.isNotEmpty)
+                Center(
+                  child: Column(
+                    children: [
+                      if (displayName.isNotEmpty)
+                        Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      if (email.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6.0),
+                          child: Text(
+                            email,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 18),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                initialValue: email,
-                enabled: false,
-                decoration: _fieldDecoration(
-                  '',
-                ).copyWith(hintText: email.isNotEmpty ? email : 'Brak email'),
-                style: const TextStyle(color: Colors.black87),
-              ),
-              const SizedBox(height: 16),
+              if (appUser != null)
+                FutureBuilder<List<Achievement>>(
+                  future: _achievementsFuture,
+                  builder: (context, achievementSnapshot) {
+                    if (achievementSnapshot.hasData) {
+                      return AchievementShowcaseWidget(
+                        equippedAchievementIds: appUser!.equippedAchievements,
+                        allAchievements: achievementSnapshot.data!,
+                        user: appUser,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
 
-              const Text(
-                'Imię i nazwisko',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _displayNameController,
-                decoration: _fieldDecoration('Twoje imię i nazwisko'),
-                buildCounter:
-                    (
-                      _, {
-                      required int currentLength,
-                      required bool isFocused,
-                      int? maxLength,
-                    }) => null,
-                validator: (val) {
-                  final v = (val ?? '').trim();
-                  if (v.isEmpty) return 'Wprowadź imię i nazwisko';
-                  if (v.length > 80) return 'Za długie (maks. 80 znaków)';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
 
-              const Text(
-                'Nazwa użytkownika',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _usernameController,
-                decoration: _fieldDecoration('Nazwa użytkownika'),
-                validator: (val) {
-                  final v = (val ?? '').trim().toLowerCase();
-                  final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
-                  if (v.isEmpty) return 'Wprowadź nazwę użytkownika';
-                  if (!regex.hasMatch(v))
-                    return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
-                  return null;
-                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Dane użytkownika',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 26),
+                    TextFormField(
+                      controller: _displayNameController,
+                      focusNode: _displayNameFocusNode,
+                      decoration: _cardFieldDecoration(
+                        'Imię i nazwisko',
+                        focused: _displayNameFocusNode.hasFocus,
+                      ),
+                      buildCounter: (_,
+                              {required int currentLength,
+                              required bool isFocused,
+                              int? maxLength}) =>
+                          null,
+                      validator: (val) {
+                        final v = (val ?? '').trim();
+                        if (v.isEmpty) return 'Wprowadź imię i nazwisko';
+                        if (v.length > 80) return 'Za długie (maks. 80 znaków)';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextFormField(
+                      controller: _usernameController,
+                      focusNode: _usernameFocusNode,
+                      decoration: _cardFieldDecoration(
+                        'Nazwa użytkownika',
+                        focused: _usernameFocusNode.hasFocus,
+                      ),
+                      validator: (val) {
+                        final v = (val ?? '').trim().toLowerCase();
+                        final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
+                        if (v.isEmpty) return 'Wprowadź nazwę użytkownika';
+                        if (!regex.hasMatch(v))
+                          return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      initialValue: email.isNotEmpty ? email : '',
+                      enabled: false,
+                      readOnly: true,
+                      decoration: _cardFieldDecoration('E-mail').copyWith(
+                        fillColor: Colors.grey[200],
+                        hintText: email.isNotEmpty ? null : 'Brak email',
+                      ),
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 18),
 
-              const Divider(),
-              const SizedBox(height: 8),
-              const Text(
-                'Usuń konto',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Usunięcie konta spowoduje trwałe usunięcie Twoich danych (odznaki, lista odwiedzonych miejsc, preferencje).',
-                style: TextStyle(color: Colors.black54),
-              ),
-              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: TextButton(
                   onPressed: _loading ? null : () => _confirmAndDeleteAccount(user),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.red.shade900.withOpacity(0.2)
+                        : Colors.red.shade50,
+                    foregroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.red.shade400
+                        : Colors.red.shade600,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: _loading
                       ? const SizedBox(
@@ -572,10 +677,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                           width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Usuń konto', style: TextStyle(color: Colors.red)),
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delete_forever),
+                            SizedBox(width: 8),
+                            Text('Usuń konto', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                 ),
               ),
-
               const SizedBox(height: 18),
             ],
           ),

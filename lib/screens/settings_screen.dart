@@ -167,7 +167,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Section title
                     const Text(
                       'Sposób poruszania',
                       style: TextStyle(
@@ -178,7 +177,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Transport pills
                     Row(
                       children: [
                         _buildTransportPill(TransportMode.foot),
@@ -191,7 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 32),
 
-                    // Divider
+
                     Row(
                       children: const [
                         Expanded(child: Divider()),

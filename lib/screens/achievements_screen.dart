@@ -7,8 +7,15 @@ import '../models/achievement.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
-class AchievementsScreen extends StatelessWidget {
+class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<AchievementsScreen> createState() => _AchievementsScreenState();
+}
+
+class _AchievementsScreenState extends State<AchievementsScreen> {
+  String? expandedId;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -65,7 +72,6 @@ class AchievementsScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Duża ikona
                       Container(
                         width: 120,
                         height: 120,
@@ -80,8 +86,6 @@ class AchievementsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 32),
-
-                      // Główny tekst
                       const Text(
                         'Zaloguj się, aby zobaczyć osiągnięcia',
                         textAlign: TextAlign.center,
@@ -93,8 +97,6 @@ class AchievementsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Opis
                       Text(
                         'Twoje postępy i zdobyte osiągnięcia będą dostępne tylko dla zalogowanych użytkowników.',
                         textAlign: TextAlign.center,
@@ -106,8 +108,6 @@ class AchievementsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 36),
-
-                      // Główny button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -134,8 +134,6 @@ class AchievementsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Tekst alternatywny
                       Text(
                         'Nie masz konta?',
                         textAlign: TextAlign.center,
@@ -146,8 +144,6 @@ class AchievementsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // Rejestracja button (outline)
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
@@ -253,6 +249,7 @@ class AchievementsScreen extends StatelessWidget {
         final a = items[i];
         final bool earned =
             earnedIds.contains(a.id) || unlockedAt.containsKey(a.id);
+        final bool isExpanded = expandedId == a.id;
 
         final int? target = (a.criteria['target'] as num?)?.toInt();
         int current = 0;
@@ -278,270 +275,234 @@ class AchievementsScreen extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            _showAchievementDetails(context, a, earned, unlockedValue, current, target);
+            setState(() {
+              expandedId = isExpanded ? null : a.id;
+            });
           },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: earned ? Colors.green.shade300 : Colors.grey.shade200,
-                width: 1.5,
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: earned ? Colors.green.shade300 : Colors.grey.shade200,
+                  width: 1.5,
+                ),
               ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Icon / Avatar
-                Container(
-                  width: 70,
-                  height: 70,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (a.photoUrl != null && a.photoUrl!.isNotEmpty)
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                         Container(
                           width: 70,
                           height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: DecorationImage(
-                              image: NetworkImage(a.photoUrl!),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        )
-                      else
-                        Icon(Icons.emoji_events, color: Colors.white, size: 36),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Title and Description - teraz z Expanded i lepszym wrapping
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        a.title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: earned ? Colors.black : Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        a.desc,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Progress Section
-                SizedBox(
-                  width: 90,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (!earned && target != null && target > 0) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: progressPercent,
-                            backgroundColor: Colors.grey.shade200,
-                            color: Colors.green.shade400,
-                            minHeight: 6,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '$current/$target',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
-                      ] else if (earned) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: Colors.green.shade600,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
+                              if (a.photoUrl != null && a.photoUrl!.isNotEmpty)
+                                Container(
+                                  width: 70,
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    image: DecorationImage(
+                                      image: NetworkImage(a.photoUrl!),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Icon(Icons.emoji_events, color: Colors.white, size: 36),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                'Zdobyte',
+                                a.title,
                                 style: TextStyle(
-                                  color: Colors.green.shade700,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 11,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: earned ? Colors.black : Colors.black87,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                a.desc,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  height: 1.3,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '100%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 90,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (!earned && target != null && target > 0) ...[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: LinearProgressIndicator(
+                                    value: progressPercent,
+                                    backgroundColor: Colors.grey.shade200,
+                                    color: Colors.green.shade400,
+                                    minHeight: 6,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '$current/$target',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ] else if (earned) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green.shade600,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Zdobyte',
+                                        style: TextStyle(
+                                          color: Colors.green.shade700,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '100%',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ],
+                            ],
                           ),
-                          textAlign: TextAlign.right,
                         ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAchievementDetails(
-    BuildContext context,
-    Achievement achievement,
-    bool earned,
-    dynamic unlockedValue,
-    int current,
-    int? target,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Colors.white,
-      isScrollControlled: true,
-      builder: (context) {
-        final progress = target != null && target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
-
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Achievement Icon with Progress
-              SizedBox(
-                width: 140,
-                height: 140,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (!earned && target != null && target > 0)
-                      CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 8,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
-                      ),
-                    Center(
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.transparent,
+                  if (isExpanded)
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.grey.shade200, width: 1),
                         ),
-                        child: achievement.photoUrl != null && achievement.photoUrl!.isNotEmpty
-                            ? ClipOval(
-                                child: Image.network(
-                                  achievement.photoUrl!,
-                                  fit: BoxFit.cover,
-                                  color: earned ? null : null,
-                                  colorBlendMode: earned ? null : BlendMode.saturation,
-                                ),
-                              )
-                            : Icon(
-                                Icons.emoji_events,
-                                color: earned ? Colors.orange.shade400 : Colors.grey.shade800,
-                                size: 64,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 140,
+                              height: 140,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  if (!earned && target != null && target > 0)
+                                    CircularProgressIndicator(
+                                      value: progressPercent,
+                                      strokeWidth: 8,
+                                      backgroundColor: Colors.grey.shade200,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.orange.shade400,
+                                      ),
+                                    ),
+                                  Center(
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.transparent,
+                                      ),
+                                      child: a.photoUrl != null && a.photoUrl!.isNotEmpty
+                                          ? ClipOval(
+                                              child: Image.network(
+                                                a.photoUrl!,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.emoji_events,
+                                              color: earned
+                                                  ? Colors.orange.shade400
+                                                  : Colors.grey.shade800,
+                                              size: 64,
+                                            ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                            const SizedBox(height: 16),
+                            if (!earned && target != null && target > 0) ...[
+                              Text(
+                                '$current / $target',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+
+                            _buildStatusBadge(earned, unlockedValue),
+                            const SizedBox(height: 20),
+
+                            _buildConditionsCard(a),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-              const SizedBox(height: 16),
-              if (!earned && target != null && target > 0) ...[
-                Text(
-                  '$current / $target',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              // Title
-              Text(
-                achievement.title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Status Badge
-              _buildStatusBadge(earned, unlockedValue),
-              const SizedBox(height: 20),
-              // Description
-              Text(
-                achievement.desc,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade700,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 28),
-              // Conditions Card
-              _buildConditionsCard(achievement),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         );
       },
@@ -649,13 +610,6 @@ class AchievementsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCriteriaRow(Achievement achievement, int current, int? target) {
-    // This widget is no longer used, its logic is merged into _buildConditionsCard
-    // and the main widget builder. I'm providing an empty implementation
-    // to avoid breaking the build if it's somehow referenced, but it should be removed.
-    return const SizedBox.shrink();
-  }
-
   String? _formatUnlockedDate(dynamic val) {
     if (val == null) return null;
     DateTime dt;
@@ -665,7 +619,6 @@ class AchievementsScreen extends StatelessWidget {
       } else if (val is DateTime) {
         dt = val;
       } else if (val is int) {
-        // assume milliseconds since epoch
         dt = DateTime.fromMillisecondsSinceEpoch(val);
       } else if (val is String) {
         dt = DateTime.parse(val);
@@ -676,7 +629,6 @@ class AchievementsScreen extends StatelessWidget {
       return val.toString();
     }
 
-    // Polish short month names
     const months = [
       'sty',
       'lut',

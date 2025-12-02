@@ -1,4 +1,3 @@
-// login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';

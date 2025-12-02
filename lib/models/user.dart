@@ -14,6 +14,7 @@ class AppUser {
   final Map<String, bool> achievementsSummary;
   final Map<String, Timestamp?> achievementsUnlockedAt;
   final List<String> visitedPlaces;
+  final List<String> equippedAchievements;
 
   AppUser({
     required this.uid,
@@ -28,6 +29,7 @@ class AppUser {
     this.achievementsSummary = const <String, bool>{},
     this.achievementsUnlockedAt = const <String, Timestamp?>{},
     this.visitedPlaces = const <String>[],
+    this.equippedAchievements = const <String>[],
   });
 
   factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
@@ -50,6 +52,7 @@ class AppUser {
           ?.map((k, v) => MapEntry(k, v as Timestamp?))) ??
         <String, Timestamp?>{},
     visitedPlaces: (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[],
+    equippedAchievements: (data['equippedAchievements'] as List<dynamic>?)?.cast<String>() ?? <String>[],
     );
   }
 
@@ -72,6 +75,7 @@ class AppUser {
       'achievementsSummary': achievementsSummary,
       'achievementsUnlockedAt': achievementsUnlockedAt,
   'visitedPlaces': visitedPlaces,
+  'equippedAchievements': equippedAchievements,
     };
 
     if (includeServerTimestamp) {

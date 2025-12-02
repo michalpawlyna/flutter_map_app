@@ -54,7 +54,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
           res.add(Place.fromMap(doc.id, data));
         }
       } catch (_) {
-        // ignore single missing/errored place
+
       }
     }
 
@@ -91,7 +91,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
           backgroundColor: Colors.white,
           body: Builder(builder: (context) {
             if (user == null) {
-              // Not logged in
+
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -136,7 +136,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
               );
             }
 
-            // Logged in: listen to user's document for favourites
+
             final userDocStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
 
             return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -198,7 +198,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
                   );
                 }
 
-                // Have favourite place ids — fetch place documents
+
                 return FutureBuilder<List<Place>>(
                   future: _fetchPlacesByIds(favs),
                   builder: (context, placesSnap) {
@@ -226,7 +226,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
 
                         return InkWell(
                           onTap: () {
-                            // show details sheet if available elsewhere
+
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -276,8 +276,6 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                               ],
                             ),
                           ),

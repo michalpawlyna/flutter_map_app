@@ -56,7 +56,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     super.initState();
     _loadPlaces();
     _subscribeToUserVisited();
-    // Re-subscribe when auth state changes so widget reacts to login/logout
     _authSub = AuthService().authStateChanges.listen((_) {
       _subscribeToUserVisited();
     });
@@ -66,7 +65,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     _userSub?.cancel();
     final user = AuthService().currentUser;
     if (user == null) {
-      // no user: clear visited set and clear any previous error so markers remain visible
       if (mounted) {
         setState(() {
           _visitedPlaceIds.clear();
@@ -76,9 +74,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
       return;
     }
 
-    // listen with error handling: when the user signs out Firestore may
-    // return PERMISSION_DENIED. Provide onError to avoid uncaught async
-    // exceptions which can crash the app.
     _userSub = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -96,7 +91,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
           });
         }
       } catch (e) {
-        // Defensive: don't allow unexpected format to crash the listener.
         if (mounted) {
           setState(() {
             _visitedPlaceIds.clear();
@@ -105,8 +99,7 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
         }
       }
     }, onError: (err) {
-      // Treat permission-denied specially (happens on sign-out) — clear visited
-      // and keep showing markers instead of hiding them.
+
       if (mounted) {
         if (err is FirebaseException && err.code == 'permission-denied') {
           setState(() {

@@ -155,7 +155,6 @@ class AuthService {
     final uid = user.uid;
     final username = newUsername.trim();
 
-    //regex walidacji (3-30 znaków, a-z0-9._-)
     final usernameRegex = RegExp(r'^[a-z0-9._-]{3,30}$');
     if (!usernameRegex.hasMatch(username.toLowerCase())) {
       throw Exception('Nieprawidłowa nazwa (3-30 znaków, a-z0-9._-).');
