@@ -79,59 +79,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildTransportPill(TransportMode mode) {
-    final isSelected = _mode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () async {
-          await _saveMode(mode);
-          setState(() => _mode = mode);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black : const Color(0xFFF8F9FA),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? Colors.black : Colors.grey.shade200,
-              width: 1.5,
-            ),
-            boxShadow: [
-              if (isSelected)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                )
-              else
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _getIcon(mode),
-                color: isSelected ? Colors.white : Colors.black87,
-                size: 24,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _getLabel(mode),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
+  // Dekoracja pola zgodna ze stylem z ProfileScreen
+  InputDecoration _fieldDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.black54),
+      filled: true,
+      fillColor: Colors.grey[200],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
       ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black, width: 1),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 
@@ -160,49 +127,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Sposób poruszania',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Section title
+                const Text(
+                  'Sposób poruszania',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Exposed dropdown styled like text inputs from ProfileScreen
+                DropdownButtonFormField<TransportMode>(
+                  value: _mode,
+                  decoration: _fieldDecoration('Wybierz sposób poruszania'),
+                  isExpanded: true,
+                  icon: const Icon(Icons.expand_more),
+                  dropdownColor: Colors.white,
+                  menuMaxHeight: 300,
+                  items: TransportMode.values.map((mode) {
+                    return DropdownMenuItem<TransportMode>(
+                      value: mode,
+                      child: Row(
+                        children: [
+                          Icon(_getIcon(mode)),
+                          const SizedBox(width: 12),
+                          Text(
+                            _getLabel(mode),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
+                    );
+                  }).toList(),
+                  onChanged: (mode) async {
+                    if (mode == null) return;
+                    await _saveMode(mode);
+                    setState(() => _mode = mode);
+                  },
+                ),
+
+                const SizedBox(height: 32),
+
+                // Divider
+                Row(
+                  children: const [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text("Więcej wkrótce"),
                     ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        _buildTransportPill(TransportMode.foot),
-                        const SizedBox(width: 12),
-                        _buildTransportPill(TransportMode.bike),
-                        const SizedBox(width: 12),
-                        _buildTransportPill(TransportMode.car),
-                      ],
-                    ),
-
-                    const SizedBox(height: 32),
-
-
-                    Row(
-                      children: const [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text("Więcej wkrótce"),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
+                    Expanded(child: Divider()),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
         ),

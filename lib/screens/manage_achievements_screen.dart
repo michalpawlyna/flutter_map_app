@@ -94,15 +94,37 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
         .toList();
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Zarządzaj odznakami'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_sharp),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Powrót',
+        ),
+        title: const Text(
+          'Zarządzaj odznakami',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black,
+        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: _isSaving
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
                 : IconButton(
-                    icon: const Icon(Icons.save),
+                    icon: const Icon(Icons.check, color: Colors.green),
                     onPressed: _saveChanges,
                     tooltip: 'Zapisz',
                   ),
@@ -136,50 +158,85 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
                 return GestureDetector(
                   onTap: () => _onAchievementTapped(achievement.id),
                   child: Opacity(
-                    opacity: isSelected || _selectedAchievementIds.length < _maxEquipped ? 1.0 : 0.5,
-                    child: Card(
-                      elevation: isSelected ? 8 : 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
-                          width: 2,
+                    opacity: isSelected || _selectedAchievementIds.length < _maxEquipped
+                        ? 1.0
+                        : 0.5,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? Colors.black : Colors.grey.shade300,
+                          width: isSelected ? 1.5 : 1,
                         ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (achievement.photoUrl != null)
-                                Image.network(
-                                  achievement.photoUrl!,
-                                  height: 48,
-                                  width: 48,
-                                  errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 48),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 )
-                              else
-                                const Icon(Icons.shield, size: 48, color: Colors.grey),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  achievement.title,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 12),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 1),
+                                )
+                              ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (achievement.photoUrl != null)
+                                  Image.network(
+                                    achievement.photoUrl!,
+                                    height: 48,
+                                    width: 48,
+                                    errorBuilder: (_, __, ___) =>
+                                        const Icon(Icons.error, size: 48),
+                                  )
+                                else
+                                  const Icon(Icons.shield,
+                                      size: 48, color: Colors.grey),
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Text(
+                                    achievement.title,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (isSelected)
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.check_circle,
+                                      color: Colors.green, size: 20),
                                 ),
                               ),
-                            ],
-                          ),
-                          if (isSelected)
-                            const Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Icon(Icons.check_circle, color: Colors.green, size: 20),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

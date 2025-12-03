@@ -69,7 +69,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _onFocusChanged() {
-
     if (mounted) setState(() {});
   }
 
@@ -79,7 +78,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     _usernameController?.removeListener(_onControllerChanged);
     _displayNameController?.dispose();
     _usernameController?.dispose();
-
 
     _displayNameFocusNode.removeListener(_onFocusChanged);
     _displayNameFocusNode.dispose();
@@ -117,8 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     return InputDecoration(
       labelText: label,
       floatingLabelBehavior: FloatingLabelBehavior.auto,
-      floatingLabelStyle:
-          TextStyle(color: labelColor, fontWeight: FontWeight.w600),
+      floatingLabelStyle: TextStyle(
+        color: labelColor,
+        fontWeight: FontWeight.w600,
+      ),
       labelStyle: TextStyle(color: labelColor),
       isDense: true,
       filled: true,
@@ -257,19 +257,15 @@ class _ProfileScreenState extends State<ProfileScreen>
     setState(() => _loading = true);
     final uid = user.uid;
     try {
-
       try {
         await FirebaseFirestore.instance.collection('users').doc(uid).delete();
       } catch (e) {
-
         debugPrint('[ProfileScreen] firestore user delete failed: $e');
       }
-
 
       try {
         await user.delete();
       } catch (e) {
-
         debugPrint('[ProfileScreen] auth delete failed: $e');
         if (e is FirebaseAuthException && e.code == 'requires-recent-login') {
           if (mounted) {
@@ -295,7 +291,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         } catch (_) {}
       }
 
-
       try {
         await _authService.signOut();
       } catch (_) {}
@@ -310,7 +305,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           alignment: Alignment.bottomCenter,
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
         );
-
 
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
@@ -396,9 +390,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(16),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
-                  child: user == null
-                      ? _buildNotLoggedIn(context)
-                      : _buildProfileForUser(user),
+                  child:
+                      user == null
+                          ? _buildNotLoggedIn(context)
+                          : _buildProfileForUser(user),
                 ),
               ),
             ),
@@ -417,11 +412,12 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: 160,
           height: 160,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Icon(
-            Icons.image_not_supported,
-            size: 96,
-            color: Colors.grey,
-          ),
+          errorBuilder:
+              (_, __, ___) => const Icon(
+                Icons.image_not_supported,
+                size: 96,
+                color: Colors.grey,
+              ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -516,14 +512,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                   radius: 42,
                   backgroundColor: Colors.grey[200],
                   backgroundImage:
-                      user.photoURL != null ? NetworkImage(user.photoURL!) : null,
-                  child: user.photoURL == null
-                      ? const Icon(
-                          Icons.person,
-                          size: 44,
-                          color: Colors.black54,
-                        )
-                      : null,
+                      user.photoURL != null
+                          ? NetworkImage(user.photoURL!)
+                          : null,
+                  child:
+                      user.photoURL == null
+                          ? const Icon(
+                            Icons.person,
+                            size: 44,
+                            color: Colors.black54,
+                          )
+                          : null,
                 ),
               ),
               const SizedBox(height: 18),
@@ -579,10 +578,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F9FA),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.grey.shade200,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: Colors.grey.shade200, width: 1.5),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,11 +605,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                         'Imię i nazwisko',
                         focused: _displayNameFocusNode.hasFocus,
                       ),
-                      buildCounter: (_,
-                              {required int currentLength,
-                              required bool isFocused,
-                              int? maxLength}) =>
-                          null,
+                      buildCounter:
+                          (
+                            _, {
+                            required int currentLength,
+                            required bool isFocused,
+                            int? maxLength,
+                          }) => null,
                       validator: (val) {
                         final v = (val ?? '').trim();
                         if (v.isEmpty) return 'Wprowadź imię i nazwisko';
@@ -641,15 +639,64 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 16),
 
-                    TextFormField(
-                      initialValue: email.isNotEmpty ? email : '',
-                      enabled: false,
-                      readOnly: true,
-                      decoration: _cardFieldDecoration('E-mail').copyWith(
-                        fillColor: Colors.grey[200],
-                        hintText: email.isNotEmpty ? null : 'Brak email',
-                      ),
-                      style: TextStyle(color: Colors.grey[600]),
+                    Stack(
+                      alignment: Alignment.centerRight,
+                      children: [
+                        TextFormField(
+                          initialValue: email.isNotEmpty ? email : '',
+                          enabled: false,
+                          readOnly: true,
+                          decoration: _cardFieldDecoration('E-mail').copyWith(
+                            fillColor: Colors.grey[200],
+                            hintText: email.isNotEmpty ? null : 'Brak email',
+                          ),
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12.0),
+                          child: IconButton(
+                            iconSize: 20,
+                            icon: Icon(
+                              Icons.info_outline,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      backgroundColor: const Color(0xFFF8F9FA),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: const Text(
+                                        'Informacja',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      content: const Text(
+                                        'Nie można zmienić e-maila przypisanego do konta.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.of(context).pop(),
+                                          child: const Text(
+                                            'OK',
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -660,31 +707,43 @@ class _ProfileScreenState extends State<ProfileScreen>
               SizedBox(
                 width: double.infinity,
                 child: TextButton(
-                  onPressed: _loading ? null : () => _confirmAndDeleteAccount(user),
+                  onPressed:
+                      _loading ? null : () => _confirmAndDeleteAccount(user),
                   style: TextButton.styleFrom(
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.red.shade900.withOpacity(0.2)
-                        : Colors.red.shade50,
-                    foregroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.red.shade400
-                        : Colors.red.shade600,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.red.shade900.withOpacity(0.2)
+                            : Colors.red.shade50,
+                    foregroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.red.shade400
+                            : Colors.red.shade600,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                  child: _loading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.delete_forever),
-                            SizedBox(width: 8),
-                            Text('Usuń konto', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ],
-                        ),
+                  child:
+                      _loading
+                          ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.delete_forever),
+                              SizedBox(width: 8),
+                              Text(
+                                'Usuń konto',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                 ),
               ),
               const SizedBox(height: 18),
