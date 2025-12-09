@@ -8,6 +8,7 @@ import '../services/tts_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import 'package:toastification/toastification.dart';
+import 'achievement_unlocked_dialog.dart';
 import 'shimmer_placeholder_widget.dart';
 
 class PlaceDetailsSheet extends StatefulWidget {
@@ -33,7 +34,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   final AuthService _auth = AuthService();
   final FirestoreService _firestore = FirestoreService();
   bool _isFavorited = false;
-  bool _checkingFav = false;
 
   @override
   void initState() {
@@ -52,12 +52,10 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   Future<void> _initFavourite() async {
     final user = _auth.currentUser;
     if (user == null) return;
-    setState(() => _checkingFav = true);
     try {
       final fav = await _firestore.isPlaceFavorited(user.uid, widget.place.id);
       if (mounted) setState(() => _isFavorited = fav);
     } catch (_) {}
-    if (mounted) setState(() => _checkingFav = false);
   }
 
   Future<void> _toggleFavourite() async {
@@ -83,7 +81,7 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
         );
       }
     } else {
-      await _firestore.addPlaceToFavourites(user.uid, widget.place.id);
+      final unlockedAchievements = await _firestore.addPlaceToFavourites(user.uid, widget.place.id);
       if (mounted) {
         toastification.show(
           context: context,
@@ -94,6 +92,10 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           alignment: Alignment.bottomCenter,
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
         );
+
+        for (final achievement in unlockedAchievements) {
+          AchievementUnlockedDialog.show(context, achievement);
+        }
       }
     }
   } catch (e) {
@@ -316,16 +318,36 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
               if (_auth.currentUser != null)
   Padding(
     padding: const EdgeInsets.only(left: 8.0),
-    child: SizedBox(
-      width: 44,
-      height: 44,
-      child: IconButton(
-        onPressed: _toggleFavourite,
-        icon: Icon(
-          _isFavorited ? Icons.favorite : Icons.favorite_border,
-          color: _isFavorited ? Colors.red : Colors.black54,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: IconButton(
+            onPressed: _toggleFavourite,
+            icon: Icon(
+              _isFavorited ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorited ? Colors.red : Colors.black54,
+            ),
+          ),
         ),
-      ),
+        StreamBuilder<int>(
+          stream: _firestore.getPlaceLikedCountStream(widget.place.id),
+          initialData: 0,
+          builder: (context, snapshot) {
+            final likeCount = snapshot.data ?? 0;
+            return Text(
+              likeCount.toString(),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          },
+        ),
+      ],
     ),
   ),
             ],
@@ -465,13 +487,14 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
     );
   }
 
-  static void show(
+  // ignore: unused_element
+  static Future<void> show(
     BuildContext context,
     Place place, {
     MapController? mapController,
     Future<void> Function(Place)? onNavigate,
   }) {
-    showModalBottomSheet(
+    return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

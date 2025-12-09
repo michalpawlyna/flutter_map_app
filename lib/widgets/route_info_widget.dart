@@ -164,6 +164,24 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
     return '$h:$m:$s';
   }
 
+  String _formatDuration(double seconds) {
+    if (seconds < 60) {
+      return '${seconds.toStringAsFixed(0)}s';
+    } else if (seconds < 3600) {
+      final minutes = (seconds / 60).toStringAsFixed(0);
+      return '${minutes}min';
+    } else {
+      final hours = (seconds ~/ 3600);
+      final minutes = ((seconds % 3600) ~/ 60);
+      return '${hours}h ${minutes}min';
+    }
+  }
+
+  String _formatRouteDistance(double meters) {
+    final km = meters / 1000.0;
+    return km.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.route == null) return const SizedBox.shrink();
@@ -215,6 +233,70 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
                     tooltip: 'Zamknij',
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Dystans trasy',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              )),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_formatRouteDistance(widget.route!.distanceMeters)} km',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey.shade300,
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text('Oczekiwany czas',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              )),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatDuration(widget.route!.durationSeconds),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 12),

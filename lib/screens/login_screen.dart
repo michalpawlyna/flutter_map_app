@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.black54),
         filled: true,
-        fillColor: Colors.grey[200],
+        fillColor: const Color.fromARGB(255, 239, 240, 241),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

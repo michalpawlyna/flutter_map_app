@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:toastification/toastification.dart';
 
 import '../models/achievement.dart';
@@ -25,7 +24,8 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
   late List<String> _selectedAchievementIds;
   bool _isSaving = false;
 
-  static const int _maxEquipped = 4;
+  static const int _maxEquipped = 1;
+  // Limit equipped achievements to 1 (only one can be shown/selected)
 
   @override
   void initState() {

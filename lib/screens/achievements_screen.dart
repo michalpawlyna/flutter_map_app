@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -7,15 +6,8 @@ import '../models/achievement.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
-class AchievementsScreen extends StatefulWidget {
+class AchievementsScreen extends StatelessWidget {
   const AchievementsScreen({Key? key}) : super(key: key);
-
-  @override
-  State<AchievementsScreen> createState() => _AchievementsScreenState();
-}
-
-class _AchievementsScreenState extends State<AchievementsScreen> {
-  String? expandedId;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -58,147 +50,155 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
         final user = AuthService().currentUser;
         if (user == null) {
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 32,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.amber[100],
-                        ),
-                        child: const Icon(
-                          Icons.lock_outline,
-                          size: 64,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'Zaloguj się, aby zobaczyć osiągnięcia',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Twoje postępy i zdobyte osiągnięcia będą dostępne tylko dla zalogowanych użytkowników.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          height: 1.5,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(height: 36),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          child: const Text('Zaloguj się'),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Nie masz konta?',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            side: BorderSide(
-                              color: Colors.grey.shade300,
-                            ),
-                            backgroundColor: Colors.grey.shade50,
-                            foregroundColor: Colors.black87,
-                          ),
-                          child: const Text(
-                            'Zarejestruj się',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
+          return _buildLoginPrompt(context);
         }
 
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
-                  .snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .snapshots(),
           builder: (context, userSnap) {
             final userData = userSnap.data?.data();
-            return _buildList(items, userData);
+            return _AchievementsList(items: items, userData: userData);
           },
         );
       },
     ),
   );
 
-  Widget _buildList(List<Achievement> items, Map<String, dynamic>? userData) {
+  Widget _buildLoginPrompt(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.amber[100],
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline,
+                    size: 64,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'Zaloguj się, aby zobaczyć osiągnięcia',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Twoje postępy i zdobyte osiągnięcia będą dostępne tylko dla zalogowanych użytkowników.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    height: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 36),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    child: const Text('Zaloguj się'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Nie masz konta?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      backgroundColor: Colors.grey.shade50,
+                      foregroundColor: Colors.black87,
+                    ),
+                    child: const Text(
+                      'Zarejestruj się',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================
+// LISTA OSIĄGNIĘĆ - StatelessWidget
+// ============================================
+class _AchievementsList extends StatelessWidget {
+  final List<Achievement> items;
+  final Map<String, dynamic>? userData;
+
+  const _AchievementsList({
+    required this.items,
+    required this.userData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final Set<String> earnedIds = {};
     final Map<String, dynamic> unlockedAt = {};
 
@@ -219,7 +219,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     }
 
     if (userData != null) {
-      userData.forEach((k, v) {
+      userData!.forEach((k, v) {
         if (k.startsWith('achievementsSummary.')) {
           final id = k.substring('achievementsSummary.'.length);
           if (v == true) earnedIds.add(id);
@@ -233,11 +233,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
     int visitedCount = 0;
     if (userData != null) {
-      final vp = userData['visitedPlaces'];
+      final vp = userData!['visitedPlaces'];
       if (vp is List) {
         visitedCount = vp.cast<String>().length;
       } else {
-        final tp = userData['totalPlacesVisited'];
+        final tp = userData!['totalPlacesVisited'];
         if (tp is num) visitedCount = tp.toInt();
       }
     }
@@ -247,25 +247,21 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       itemCount: items.length,
       itemBuilder: (context, i) {
         final a = items[i];
-        final bool earned =
-            earnedIds.contains(a.id) || unlockedAt.containsKey(a.id);
-        final bool isExpanded = expandedId == a.id;
+        final bool earned = earnedIds.contains(a.id) || unlockedAt.containsKey(a.id);
 
         final int? target = (a.criteria['target'] as num?)?.toInt();
         int current = 0;
         double progressPercent = 0.0;
+        
         if (target != null && target > 0) {
           if (a.type == 'visit') {
             current = visitedCount;
           } else {
-            final progMap =
-                userData?['achievementsProgress'] as Map<String, dynamic>?;
+            final progMap = userData?['achievementsProgress'] as Map<String, dynamic>?;
             if (progMap != null && progMap[a.id] is num) {
               current = (progMap[a.id] as num).toInt();
-            } else if (userData != null &&
-                userData['achievementsProgress.${a.id}'] is num) {
-              current =
-                  (userData['achievementsProgress.${a.id}'] as num).toInt();
+            } else if (userData != null && userData!['achievementsProgress.${a.id}'] is num) {
+              current = (userData!['achievementsProgress.${a.id}'] as num).toInt();
             }
           }
           progressPercent = (current / target).clamp(0.0, 1.0);
@@ -273,244 +269,347 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
         final unlockedValue = unlockedAt[a.id];
 
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              expandedId = isExpanded ? null : a.id;
-            });
-          },
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: earned ? Colors.green.shade300 : Colors.grey.shade200,
-                  width: 1.5,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (a.photoUrl != null && a.photoUrl!.isNotEmpty)
-                                Container(
-                                  width: 70,
-                                  height: 70,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    image: DecorationImage(
-                                      image: NetworkImage(a.photoUrl!),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                )
-                              else
-                                Icon(Icons.emoji_events, color: Colors.white, size: 36),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                a.title,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: earned ? Colors.black : Colors.black87,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                a.desc,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                  height: 1.3,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 90,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              if (!earned && target != null && target > 0) ...[
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: LinearProgressIndicator(
-                                    value: progressPercent,
-                                    backgroundColor: Colors.grey.shade200,
-                                    color: Colors.green.shade400,
-                                    minHeight: 6,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '$current/$target',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade500,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                ),
-                              ] else if (earned) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green.shade600,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Zdobyte',
-                                        style: TextStyle(
-                                          color: Colors.green.shade700,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '100%',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isExpanded)
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: Colors.grey.shade200, width: 1),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 140,
-                              height: 140,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  if (!earned && target != null && target > 0)
-                                    CircularProgressIndicator(
-                                      value: progressPercent,
-                                      strokeWidth: 8,
-                                      backgroundColor: Colors.grey.shade200,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.orange.shade400,
-                                      ),
-                                    ),
-                                  Center(
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.transparent,
-                                      ),
-                                      child: a.photoUrl != null && a.photoUrl!.isNotEmpty
-                                          ? ClipOval(
-                                              child: Image.network(
-                                                a.photoUrl!,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            )
-                                          : Icon(
-                                              Icons.emoji_events,
-                                              color: earned
-                                                  ? Colors.orange.shade400
-                                                  : Colors.grey.shade800,
-                                              size: 64,
-                                            ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            if (!earned && target != null && target > 0) ...[
-                              Text(
-                                '$current / $target',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-
-                            _buildStatusBadge(earned, unlockedValue),
-                            const SizedBox(height: 20),
-
-                            _buildConditionsCard(a),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+        // ⬇️ Każdy element to osobny StatefulWidget z własnym stanem
+        return _AchievementTile(
+          key: ValueKey(a.id),
+          achievement: a,
+          earned: earned,
+          target: target,
+          current: current,
+          progressPercent: progressPercent,
+          unlockedValue: unlockedValue,
         );
       },
     );
   }
+}
 
-  Widget _buildStatusBadge(bool earned, dynamic unlockedValue) {
-    final dateText = _formatUnlockedDate(unlockedValue);
+// ============================================
+// POJEDYNCZY ELEMENT OSIĄGNIĘCIA - z własną animacją
+// ============================================
+class _AchievementTile extends StatefulWidget {
+  final Achievement achievement;
+  final bool earned;
+  final int? target;
+  final int current;
+  final double progressPercent;
+  final dynamic unlockedValue;
+
+  const _AchievementTile({
+    Key? key,
+    required this.achievement,
+    required this.earned,
+    required this.target,
+    required this.current,
+    required this.progressPercent,
+    required this.unlockedValue,
+  }) : super(key: key);
+
+  @override
+  State<_AchievementTile> createState() => _AchievementTileState();
+}
+
+class _AchievementTileState extends State<_AchievementTile>
+    with SingleTickerProviderStateMixin {
+  
+  late AnimationController _controller;
+  late Animation<double> _heightAnimation;
+  late Animation<double> _opacityAnimation;
+  late Animation<double> _rotationAnimation;
+  
+  bool _isExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+
+    _heightAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutCubic,
+    );
+
+    _opacityAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
+    );
+
+    _rotationAnimation = Tween<double>(begin: 0, end: 0.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.achievement;
+    final earned = widget.earned;
+    final target = widget.target;
+    final current = widget.current;
+    final progressPercent = widget.progressPercent;
+
+    return GestureDetector(
+      onTap: _toggleExpanded,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 239, 240, 241),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: earned ? Colors.green.shade300 : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // NAGŁÓWEK
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Ikona/Zdjęcie
+                  SizedBox(
+                    width: 70,
+                    height: 70,
+                    child: a.photoUrl != null && a.photoUrl!.isNotEmpty
+                        ? Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: DecorationImage(
+                                image: NetworkImage(a.photoUrl!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.emoji_events, color: Colors.white, size: 36),
+                  ),
+                  const SizedBox(width: 16),
+                  
+                  // Tytuł i opis
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          a.title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: earned ? Colors.black : Colors.black87,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          a.desc,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Progress / Status
+                  SizedBox(
+                    width: 90,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (!earned && target != null && target > 0) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              value: progressPercent,
+                              backgroundColor: Colors.white,
+                              color: Colors.green.shade400,
+                              minHeight: 6,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$current/$target',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ] else if (earned) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.green.shade300, width: 1),
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green.shade600, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Zdobyte',
+                                  style: TextStyle(
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '100%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  
+                  // Strzałka
+                  const SizedBox(width: 8),
+                  RotationTransition(
+                    turns: _rotationAnimation,
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.grey.shade500,
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ROZWIJANA TREŚĆ
+            SizeTransition(
+              sizeFactor: _heightAnimation,
+              axisAlignment: -1.0,
+              child: FadeTransition(
+                opacity: _opacityAnimation,
+                child: _buildExpandedContent(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedContent() {
+    final a = widget.achievement;
+    final earned = widget.earned;
+    final target = widget.target;
+    final current = widget.current;
+    final progressPercent = widget.progressPercent;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Duża ikona z progress
+            SizedBox(
+              width: 140,
+              height: 140,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (!earned && target != null && target > 0)
+                    CircularProgressIndicator(
+                      value: progressPercent,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
+                    ),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                      ),
+                      child: a.photoUrl != null && a.photoUrl!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(a.photoUrl!, fit: BoxFit.cover),
+                            )
+                          : Icon(
+                              Icons.emoji_events,
+                              color: earned ? Colors.orange.shade400 : Colors.grey.shade800,
+                              size: 64,
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            if (!earned && target != null && target > 0) ...[
+              Text(
+                '$current / $target',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            _buildStatusBadge(),
+            const SizedBox(height: 20),
+            _buildConditionsCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    final earned = widget.earned;
+    final dateText = _formatUnlockedDate(widget.unlockedValue);
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -534,7 +633,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               fontSize: 11,
             ),
           ),
-          if (earned && dateText != null) ...[
+          if (earned && dateText != null)
             Text(
               ' - $dateText',
               style: TextStyle(
@@ -543,17 +642,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildConditionsCard(Achievement achievement) {
-    final crit = achievement.criteria;
+  Widget _buildConditionsCard() {
+    final crit = widget.achievement.criteria;
     String? conditionText;
 
-    if (achievement.type == 'visit' && crit['target'] is num) {
+    if (widget.achievement.type == 'visit' && crit['target'] is num) {
       final t = (crit['target'] as num).toInt();
       final pluralForm = t == 1
           ? 'miejsce'
@@ -565,9 +663,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       conditionText = 'Osiągnij $value w $key';
     }
 
-    if (conditionText == null) {
-      return const SizedBox.shrink();
-    }
+    if (conditionText == null) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -629,20 +725,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       return val.toString();
     }
 
-    const months = [
-      'sty',
-      'lut',
-      'mar',
-      'kwi',
-      'maj',
-      'cze',
-      'lip',
-      'sie',
-      'wrz',
-      'paź',
-      'lis',
-      'gru',
-    ];
+    const months = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
     final day = dt.day.toString().padLeft(2, '0');
     final mon = months[(dt.month - 1).clamp(0, 11)];
     final year = dt.year.toString();

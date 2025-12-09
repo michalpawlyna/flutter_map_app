@@ -11,6 +11,8 @@ class AppUser {
   final String? role;
   final Timestamp? createdAt;
   final int totalPlacesVisited;
+  final int totalPlacesLiked;
+  final int totalRoutesCreated;
   final Map<String, bool> achievementsSummary;
   final Map<String, Timestamp?> achievementsUnlockedAt;
   final List<String> visitedPlaces;
@@ -26,6 +28,8 @@ class AppUser {
     this.role,
     this.createdAt,
     this.totalPlacesVisited = 0,
+    this.totalPlacesLiked = 0,
+    this.totalRoutesCreated = 0,
     this.achievementsSummary = const <String, bool>{},
     this.achievementsUnlockedAt = const <String, Timestamp?>{},
     this.visitedPlaces = const <String>[],
@@ -44,6 +48,8 @@ class AppUser {
       role: data['role'] as String?,
       createdAt: data['createdAt'] as Timestamp?,
     totalPlacesVisited: (data['totalPlacesVisited'] as num?)?.toInt() ?? 0,
+    totalPlacesLiked: (data['totalPlacesLiked'] as num?)?.toInt() ?? 0,
+    totalRoutesCreated: (data['totalRoutesCreated'] as num?)?.toInt() ?? 0,
     achievementsSummary: ((data['achievementsSummary'] as Map<String, dynamic>?)
         ?.map((k, v) => MapEntry(k, v as bool))) ??
       <String, bool>{},
@@ -72,6 +78,8 @@ class AppUser {
       'favouritePlaces': favouritePlaces,
       'role': role ?? '',
       'totalPlacesVisited': totalPlacesVisited,
+      'totalPlacesLiked': totalPlacesLiked,
+      'totalRoutesCreated': totalRoutesCreated,
       'achievementsSummary': achievementsSummary,
       'achievementsUnlockedAt': achievementsUnlockedAt,
   'visitedPlaces': visitedPlaces,
@@ -87,6 +95,41 @@ class AppUser {
     return map;
   }
 
+  AppUser copyWith({
+    String? uid,
+    String? email,
+    String? username,
+    String? displayName,
+    String? photoURL,
+    List<String>? favouritePlaces,
+    String? role,
+    Timestamp? createdAt,
+    int? totalPlacesVisited,
+    int? totalPlacesLiked,
+    int? totalRoutesCreated,
+    Map<String, bool>? achievementsSummary,
+    Map<String, Timestamp?>? achievementsUnlockedAt,
+    List<String>? visitedPlaces,
+    List<String>? equippedAchievements,
+  }) {
+    return AppUser(
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      username: username ?? this.username,
+      displayName: displayName ?? this.displayName,
+      photoURL: photoURL ?? this.photoURL,
+      favouritePlaces: favouritePlaces ?? this.favouritePlaces,
+      role: role ?? this.role,
+      createdAt: createdAt ?? this.createdAt,
+      totalPlacesVisited: totalPlacesVisited ?? this.totalPlacesVisited,
+      totalPlacesLiked: totalPlacesLiked ?? this.totalPlacesLiked,
+      totalRoutesCreated: totalRoutesCreated ?? this.totalRoutesCreated,
+      achievementsSummary: achievementsSummary ?? this.achievementsSummary,
+      achievementsUnlockedAt: achievementsUnlockedAt ?? this.achievementsUnlockedAt,
+      visitedPlaces: visitedPlaces ?? this.visitedPlaces,
+      equippedAchievements: equippedAchievements ?? this.equippedAchievements,
+    );
+  }
 
   static AppUser fromFirebaseUser(User fbUser) {
     return AppUser(

@@ -6,7 +6,6 @@ import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:toastification/toastification.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
@@ -18,7 +17,6 @@ import '../services/firestore_service.dart';
 import '../services/tts_service.dart';
 import '../services/proximity_service.dart';
 import '../services/auth_service.dart';
-import '../models/achievement.dart';
 import '../widgets/achievement_unlocked_dialog.dart';
 
 import '../services/route_service.dart';
@@ -82,11 +80,7 @@ class _MapScreenState extends State<MapScreen>
       setState(() {
         _currentRoute = result['route'] as RouteResult;
         final places = result['places'] as List<dynamic>?;
-        _visitOrderIds =
-            places
-                ?.map((e) => e['id'] as String? ?? '')
-                .where((s) => s.isNotEmpty)
-                .toList();
+        _visitOrderIds = places?.map((e) => e['id'] as String? ?? '').where((s) => s.isNotEmpty).toList();
       });
 
       if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
@@ -97,8 +91,27 @@ class _MapScreenState extends State<MapScreen>
           ),
         );
       }
+
+      // Raportuj utworzenie trasy w tle (bez czekania)
+      _reportRouteCreationInBackground();
     }
     widget.routeResultNotifier?.value = null;
+  }
+
+  Future<void> _reportRouteCreationInBackground() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null || !mounted) return;
+
+      final unlockedAchievements = await _firestoreService.reportRouteCreation(user.uid);
+      if (mounted && unlockedAchievements.isNotEmpty) {
+        for (final ach in unlockedAchievements) {
+          await AchievementUnlockedDialog.show(context, ach);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error reporting route creation: $e');
+    }
   }
 
   Future<void> _initializeServicesAndLocationStream() async {
@@ -123,8 +136,7 @@ class _MapScreenState extends State<MapScreen>
       Position? initialPos = await Geolocator.getLastKnownPosition();
       if (initialPos == null) {
         initialPos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
+            desiredAccuracy: LocationAccuracy.high);
       }
       _initialCenter = LatLng(initialPos.latitude, initialPos.longitude);
       debugPrint('[MapScreen] initial center set to $_initialCenter');
@@ -132,6 +144,7 @@ class _MapScreenState extends State<MapScreen>
       debugPrint('[MapScreen] could not get explicit initial position: $e');
     }
   }
+
 
   Future<void> _initProximity(Stream<Position> positionStream) async {
     final places = await _firestore_service_getAllPlaces();
@@ -148,28 +161,14 @@ class _MapScreenState extends State<MapScreen>
         final user = AuthService().currentUser;
         if (user != null) {
           try {
-            final res = await _firestoreService.reportPlaceVisit(
-              uid: user.uid,
-              place: place,
-            );
-            // Do not show toasts about simple visits. If the visit unlocked achievements,
-            // fetch achievement docs and show the unlocked dialog for each.
-            if (res.unlockedAchievementIds.isNotEmpty) {
-              for (final achId in res.unlockedAchievementIds) {
-                final achSnap =
-                    await FirebaseFirestore.instance
-                        .collection('achievements')
-                        .doc(achId)
-                        .get();
-                if (achSnap.exists) {
-                  final ach = Achievement.fromSnapshot(achSnap);
-                  // show a blocking dialog so user can acknowledge the achievement
-                  await showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => AchievementUnlockedDialog(achievement: ach),
-                  );
-                }
+            final res = await _firestoreService.reportPlaceVisit(uid: user.uid, place: place);
+            if (res.unlockedAchievements.isNotEmpty) {
+              for (final ach in res.unlockedAchievements) {
+                await showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => AchievementUnlockedDialog(achievement: ach),
+                );
               }
             }
           } catch (e) {
@@ -285,7 +284,9 @@ class _MapScreenState extends State<MapScreen>
                     retinaMode: RetinaMode.isHighDensity(context),
                   ),
                   if (_currentRoute != null)
-                    RoutePolylineWidget(points: _currentRoute!.points),
+                    RoutePolylineWidget(
+                      points: _currentRoute!.points,
+                    ),
                   PlacesMarkersWidget(
                     mapController: _animatedMapController,
                     visitOrderIds: _visitOrderIds,
@@ -314,18 +315,18 @@ class _MapScreenState extends State<MapScreen>
               ),
               CenterOnUserButton(mapController: _animatedMapController),
               MenuButton(scaffoldKey: widget.scaffoldKey),
-              RouteInfoWidget(
-                route: _currentRoute,
-                destinationName: _destinationName,
-                locationService: _locationService,
-                onClear: () {
-                  setState(() {
-                    _currentRoute = null;
-                    _destinationName = null;
-                    _visitOrderIds = null;
-                  });
-                },
-              ),
+                    RouteInfoWidget(
+                      route: _currentRoute,
+                      destinationName: _destinationName,
+                      locationService: _locationService,
+                      onClear: () {
+                        setState(() {
+                          _currentRoute = null;
+                          _destinationName = null;
+                          _visitOrderIds = null;
+                        });
+                      },
+                    ),
             ],
           ),
         );

@@ -14,6 +14,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/route_service.dart';
 import 'place_details_sheet_widget.dart';
+import 'achievement_unlocked_dialog.dart';
 import 'package:toastification/toastification.dart';
 
 class PlacesMarkersWidget extends StatefulWidget {
@@ -129,6 +130,19 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     _userSub?.cancel();
     _authSub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _reportRouteCreationInBackground(String uid) async {
+    try {
+      final unlockedAchievements = await _firestoreService.reportRouteCreation(uid);
+      if (mounted && unlockedAchievements.isNotEmpty) {
+        for (final ach in unlockedAchievements) {
+          await AchievementUnlockedDialog.show(context, ach);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error reporting route creation: $e');
+    }
   }
 
   Future<void> _loadPlaces() async {
@@ -264,6 +278,12 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                       );
 
                       widget.onRouteGenerated?.call(routeResult, selectedPlace);
+
+                      // Raportuj utworzenie trasy w tle
+                      final user = AuthService().currentUser;
+                      if (user != null) {
+                        _reportRouteCreationInBackground(user.uid);
+                      }
 
                       if (routeResult.points.isNotEmpty) {
                         widget.mapController.mapController.fitCamera(

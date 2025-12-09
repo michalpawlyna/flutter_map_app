@@ -31,9 +31,10 @@ class AchievementShowcaseWidget extends StatelessWidget {
     final cardBg = isDark ? theme.cardColor : const Color(0xFFF8F9FA);
     final borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
 
-    const int columns = 4;
+    // Only a single equipped achievement is allowed now.
+    const int columns = 1;
     final int slots = columns;
-    final int shown = equippedAchievements.length > slots ? slots : equippedAchievements.length;
+    final int shown = equippedAchievements.isNotEmpty ? 1 : 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -124,14 +125,13 @@ class AchievementShowcaseWidget extends StatelessWidget {
 
 class _AchievementTile extends StatelessWidget {
   final Achievement achievement;
-  final VoidCallback? onTap;
 
-  const _AchievementTile({Key? key, required this.achievement, this.onTap}) : super(key: key);
+  const _AchievementTile({Key? key, required this.achievement}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: null,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,

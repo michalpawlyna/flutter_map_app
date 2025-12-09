@@ -12,8 +12,13 @@ import '../screens/favourite_places_screen.dart';
 class AppDrawer extends StatelessWidget {
   final AuthService authService;
   final ValueChanged<int> onSelect;
+  final GlobalKey<ScaffoldState> scaffoldKey;
 
-  const AppDrawer({Key? key, required this.authService, required this.onSelect})
+  const AppDrawer(
+      {Key? key,
+      required this.authService,
+      required this.onSelect,
+      required this.scaffoldKey})
       : super(key: key);
 
   @override
@@ -91,19 +96,69 @@ class AppDrawer extends StatelessWidget {
                           },
                           child: Row(
                             children: [
-                              CircleAvatar(
-                                radius: 32,
-                                backgroundColor: Colors.grey[200],
-                                backgroundImage: photoUrl != null
-                                    ? NetworkImage(photoUrl)
-                                    : null,
-                                child: photoUrl == null
-                                    ? const Icon(
-                                        Icons.person,
-                                        size: 32,
-                                        color: Colors.black54,
-                                      )
-                                    : null,
+                              // Avatar with optional equipped achievement badge
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 32,
+                                    backgroundColor: Colors.grey[200],
+                                    backgroundImage:
+                                        photoUrl != null ? NetworkImage(photoUrl) : null,
+                                    child: photoUrl == null
+                                        ? const Icon(
+                                            Icons.person,
+                                            size: 32,
+                                            color: Colors.black54,
+                                          )
+                                        : null,
+                                  ),
+                                  if (snap.hasData && snap.data!.exists)
+                                    Builder(builder: (ctx) {
+                                      final appUser = AppUser.fromSnapshot(snap.data!);
+                                      if (appUser.equippedAchievements.isEmpty) return const SizedBox.shrink();
+                                      final eid = appUser.equippedAchievements.first;
+                                      return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                                        future: FirebaseFirestore.instance
+                                            .collection('achievements')
+                                            .doc(eid)
+                                            .get(),
+                                        builder: (c, aSnap) {
+                                          if (!aSnap.hasData || !aSnap.data!.exists) return const SizedBox.shrink();
+                                          final data = aSnap.data!.data() ?? <String, dynamic>{};
+                                          final photo = data['photoUrl'] as String?;
+                                          return Positioned(
+                                            bottom: 0,
+                                            right: -2,
+                                            child: Container(
+                                              width: 30,
+                                              height: 30,
+                                              // Transparent background so only the badge image is visible
+                                              child: ClipOval(
+                                                child: photo != null
+                                                    ? Image.network(
+                                                        photo,
+                                                        fit: BoxFit.cover,
+                                                        width: 30,
+                                                        height: 30,
+                                                        errorBuilder: (_, __, ___) => Icon(
+                                                          Icons.shield,
+                                                          size: 16,
+                                                          color: Colors.grey[700],
+                                                        ),
+                                                      )
+                                                    : Icon(
+                                                        Icons.shield,
+                                                        size: 16,
+                                                        color: Colors.grey[700],
+                                                      ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }),
+                                ],
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -236,6 +291,8 @@ class AppDrawer extends StatelessWidget {
                 child: user != null
                     ? TextButton.icon(
                         onPressed: () async {
+                          // Capture the drawer context before showing dialog
+                          final drawerContext = context;
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => Dialog(
@@ -340,35 +397,41 @@ class AppDrawer extends StatelessWidget {
                             ),
                           );
 
+                          final scaffoldContext = scaffoldKey.currentContext;
+
                           if (confirm != true) return;
 
-                          Navigator.of(context).pop();
+                          Navigator.of(drawerContext).pop();
                           try {
                             await authService.signOut();
                             onSelect(0);
 
-                            toastification.show(
-                              context: context,
-                              title: const Text('Wylogowano pomyślnie'),
-                              style: ToastificationStyle.flat,
-                              type: ToastificationType.success,
-                              autoCloseDuration: const Duration(seconds: 3),
-                              alignment: Alignment.bottomCenter,
-                              margin:
-                                  const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                            );
+                            if (scaffoldContext != null && scaffoldContext.mounted) {
+                              toastification.show(
+                                context: scaffoldContext,
+                                title: const Text('Wylogowano pomyślnie'),
+                                style: ToastificationStyle.flat,
+                                type: ToastificationType.success,
+                                autoCloseDuration: const Duration(seconds: 3),
+                                alignment: Alignment.bottomCenter,
+                                margin:
+                                    const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                              );
+                            }
                           } catch (e) {
-                            toastification.show(
-                              context: context,
-                              title:
-                                  Text('Błąd wylogowania: ${e.toString()}'),
-                              style: ToastificationStyle.flat,
-                              type: ToastificationType.error,
-                              autoCloseDuration: const Duration(seconds: 4),
-                              alignment: Alignment.bottomCenter,
-                              margin:
-                                  const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                            );
+                            if (scaffoldContext != null && scaffoldContext.mounted) {
+                              toastification.show(
+                                context: scaffoldContext,
+                                title:
+                                    Text('Błąd wylogowania: ${e.toString()}'),
+                                style: ToastificationStyle.flat,
+                                type: ToastificationType.error,
+                                autoCloseDuration: const Duration(seconds: 4),
+                                alignment: Alignment.bottomCenter,
+                                margin:
+                                    const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                              );
+                            }
                           }
                         },
                         icon: Icon(Icons.logout, color: Colors.grey[700]),

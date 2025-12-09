@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'package:toastification/toastification.dart';
 import 'screens/map_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/settings_screen.dart';
 import 'screens/select_city_screen.dart';
 import 'services/auth_service.dart';
 import 'widgets/app_drawer.dart';
@@ -33,10 +33,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'FlutterMapApp',
-      debugShowCheckedModeBanner: false,
-      home: MainScaffold(),
+    return ToastificationWrapper(
+      child: const MaterialApp(
+        title: 'FlutterMapApp',
+        debugShowCheckedModeBanner: false,
+        home: MainScaffold(),
+      ),
     );
   }
 }
@@ -70,6 +72,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: AppDrawer(
+        scaffoldKey: _scaffoldKey,
         authService: _authService,
         onSelect: (index) async {
           if (index == -1) {

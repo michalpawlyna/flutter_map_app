@@ -120,7 +120,7 @@ class AuthService {
 
         await usersRef.set(map, SetOptions(merge: true));
       } else {
-        final data = snap.data() as Map<String, dynamic>? ?? {};
+        final data = snap.data() ?? {};
         final update = <String, dynamic>{};
         if ((data['displayName'] as String?)?.isEmpty ?? true) {
           update['displayName'] =
@@ -170,7 +170,7 @@ class AuthService {
       }
 
       final currentUsername =
-          (userSnap.data() as Map<String, dynamic>?)?['username'] as String? ??
+          (userSnap.data())?['username'] as String? ??
           '';
 
       if (currentUsername == username) return;

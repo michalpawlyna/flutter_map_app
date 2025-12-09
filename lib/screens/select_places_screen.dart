@@ -236,10 +236,10 @@ class _PlacesListState extends State<_PlacesList> {
                         constraints: const BoxConstraints(minHeight: 90),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8F9FA),
+                          color: const Color.fromARGB(255, 239, 240, 241),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: selected ? Colors.black : Colors.grey.shade200,
+                            color: selected ? Colors.black : Colors.transparent,
                             width: 1.5,
                           ),
                         ),

@@ -85,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.black54),
       filled: true,
-      fillColor: Colors.grey[200],
+      fillColor: const Color.fromARGB(255, 239, 240, 241),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -172,20 +172,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await _saveMode(mode);
                     setState(() => _mode = mode);
                   },
-                ),
-
-                const SizedBox(height: 32),
-
-                // Divider
-                Row(
-                  children: const [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text("Więcej wkrótce"),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
                 ),
               ],
             ),

@@ -232,9 +232,9 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8F9FA),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200, width: 1.2),
+                              color: const Color.fromARGB(255, 239, 240, 241),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.transparent, width: 1.2),
                             ),
                             child: Row(
                               children: [

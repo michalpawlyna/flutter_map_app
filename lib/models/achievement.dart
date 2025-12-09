@@ -1,5 +1,40 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum AchievementType {
+  visit,
+  likePlace,
+  createRoute,
+  unknown;
+
+  static AchievementType fromString(String type) {
+    switch (type) {
+      case 'visit':
+        return AchievementType.visit;
+      case 'like_place':
+      case 'likePlace':
+        return AchievementType.likePlace;
+      case 'create_route':
+      case 'createRoute':
+        return AchievementType.createRoute;
+      default:
+        return AchievementType.unknown;
+    }
+  }
+
+  String get asString {
+    switch (this) {
+      case AchievementType.visit:
+        return 'visit';
+      case AchievementType.likePlace:
+        return 'likePlace';
+      case AchievementType.createRoute:
+        return 'createRoute';
+      default:
+        return 'unknown';
+    }
+  }
+}
+
 class Achievement {
   final String id;
   final Map<String, dynamic> criteria;
@@ -7,7 +42,7 @@ class Achievement {
   final String key;
   final String title;
   final String? photoUrl;
-  final String type;
+  final AchievementType type;
   final Timestamp? createdAt;
 
   Achievement({
@@ -29,7 +64,7 @@ class Achievement {
       key: data['key'] as String? ?? id,
       title: data['title'] as String? ?? '',
       photoUrl: data['photoUrl'] as String?,
-      type: data['type'] as String? ?? '',
+      type: AchievementType.fromString(data['type'] as String? ?? ''),
       createdAt: data['createdAt'] as Timestamp?,
     );
   }
@@ -46,7 +81,7 @@ class Achievement {
       'key': key,
       if (photoUrl != null) 'photoUrl': photoUrl,
       'title': title,
-      'type': type,
+      'type': type.asString,
       if (createdAt != null) 'createdAt': createdAt,
     };
   }

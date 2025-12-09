@@ -171,7 +171,7 @@ class LocationService {
       }
     }
 
-    if (pos.accuracy != null && pos.accuracy > 2000) {
+    if (pos.accuracy > 2000) {
       return;
     }
 

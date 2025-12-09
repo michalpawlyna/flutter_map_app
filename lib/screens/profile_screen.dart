@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/achievement.dart';
 import '../models/user.dart';
-import '../screens/manage_achievements_screen.dart';
 import '../widgets/achievement_showcase_widget.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
@@ -87,55 +86,24 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  InputDecoration _fieldDecoration(String label) {
+  InputDecoration _fieldDecoration(String hint, {bool focused = false}) {
     return InputDecoration(
-      labelText: label,
-      floatingLabelBehavior: FloatingLabelBehavior.auto,
-      isDense: true,
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.black54),
       filled: true,
-      fillColor: Colors.grey[200],
+      fillColor: const Color.fromARGB(255, 239, 240, 241),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 1.2),
+        borderSide: const BorderSide(color: Colors.black, width: 1),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    );
-  }
-
-  InputDecoration _cardFieldDecoration(String label, {bool focused = false}) {
-    final labelColor = focused ? Colors.black : Colors.grey.shade700;
-    return InputDecoration(
-      labelText: label,
-      floatingLabelBehavior: FloatingLabelBehavior.auto,
-      floatingLabelStyle: TextStyle(
-        color: labelColor,
-        fontWeight: FontWeight.w600,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
       ),
-      labelStyle: TextStyle(color: labelColor),
-      isDense: true,
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.black, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 
@@ -382,19 +350,17 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
           backgroundColor: Colors.grey[50],
-          body: Center(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child:
-                      user == null
-                          ? _buildNotLoggedIn(context)
-                          : _buildProfileForUser(user),
-                ),
+          body: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child:
+                    user == null
+                        ? _buildNotLoggedIn(context)
+                        : _buildProfileForUser(user),
               ),
             ),
           ),
@@ -508,21 +474,74 @@ class _ProfileScreenState extends State<ProfileScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: CircleAvatar(
-                  radius: 42,
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage:
-                      user.photoURL != null
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 42,
+                      backgroundColor: Colors.grey[200],
+                      backgroundImage: user.photoURL != null
                           ? NetworkImage(user.photoURL!)
                           : null,
-                  child:
-                      user.photoURL == null
+                      child: user.photoURL == null
                           ? const Icon(
-                            Icons.person,
-                            size: 44,
-                            color: Colors.black54,
-                          )
+                              Icons.person,
+                              size: 44,
+                              color: Colors.black54,
+                            )
                           : null,
+                    ),
+                    // Show equipped achievement badge (bottom-right)
+                    if (appUser != null && appUser.equippedAchievements.isNotEmpty)
+                      FutureBuilder<List<Achievement>>(
+                        future: _achievementsFuture,
+                        builder: (ctx, achSnap) {
+                          if (!achSnap.hasData) return const SizedBox.shrink();
+                          final all = achSnap.data!;
+                          final eid = appUser!.equippedAchievements.first;
+                          final match = all.firstWhere(
+                              (a) => a.id == eid,
+                              orElse: () => Achievement(
+                                  id: '',
+                                  criteria: {},
+                                  desc: '',
+                                  key: '',
+                                  title: '',
+                                  photoUrl: null,
+                                  type: AchievementType.unknown));
+                          if (match.id.isEmpty) return const SizedBox.shrink();
+
+                          return Positioned(
+                            bottom: 0,
+                            right: MediaQuery.of(context).size.width > 600 ? 0 : -2,
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              // No background or border so badge appears with transparent background
+                              child: ClipOval(
+                                child: match.photoUrl != null
+                                    ? Image.network(
+                                        match.photoUrl!,
+                                        fit: BoxFit.cover,
+                                        width: 34,
+                                        height: 34,
+                                        errorBuilder: (_, __, ___) => Icon(
+                                          Icons.shield,
+                                          size: 18,
+                                          color: Colors.grey[700],
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.shield,
+                                        size: 18,
+                                        color: Colors.grey[700],
+                                      ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 18),
@@ -571,135 +590,123 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
 
               const SizedBox(height: 18),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200, width: 1.5),
+              const Text(
+                'Imię i nazwisko',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Dane użytkownika',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _displayNameController,
+                focusNode: _displayNameFocusNode,
+                decoration: _fieldDecoration('Wprowadź imię i nazwisko',
+                    focused: _displayNameFocusNode.hasFocus),
+                buildCounter: (_,
+                        {required int currentLength,
+                        required bool isFocused,
+                        int? maxLength}) =>
+                    null,
+                validator: (val) {
+                  final v = (val ?? '').trim();
+                  if (v.isEmpty) return 'Wprowadź imię i nazwisko';
+                  if (v.length > 80) return 'Za długie (maks. 80 znaków)';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Nazwa użytkownika',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _usernameController,
+                focusNode: _usernameFocusNode,
+                decoration: _fieldDecoration('Wprowadź nazwę użytkownika',
+                    focused: _usernameFocusNode.hasFocus),
+                validator: (val) {
+                  final v = (val ?? '').trim().toLowerCase();
+                  final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
+                  if (v.isEmpty) return 'Wprowadź nazwę użytkownika';
+                  if (!regex.hasMatch(v))
+                    return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'E-mail',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Stack(
+                alignment: Alignment.centerRight,
+                children: [
+                  TextFormField(
+                    initialValue: email.isNotEmpty ? email : '',
+                    enabled: false,
+                    readOnly: true,
+                    decoration:
+                        _fieldDecoration(email.isNotEmpty ? '' : 'Brak email')
+                            .copyWith(
+                      fillColor: Colors.grey[200],
                     ),
-                    const SizedBox(height: 26),
-                    TextFormField(
-                      controller: _displayNameController,
-                      focusNode: _displayNameFocusNode,
-                      decoration: _cardFieldDecoration(
-                        'Imię i nazwisko',
-                        focused: _displayNameFocusNode.hasFocus,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12.0),
+                    child: IconButton(
+                      iconSize: 20,
+                      icon: Icon(
+                        Icons.info_outline,
+                        color: Colors.grey[600],
                       ),
-                      buildCounter:
-                          (
-                            _, {
-                            required int currentLength,
-                            required bool isFocused,
-                            int? maxLength,
-                          }) => null,
-                      validator: (val) {
-                        final v = (val ?? '').trim();
-                        if (v.isEmpty) return 'Wprowadź imię i nazwisko';
-                        if (v.length > 80) return 'Za długie (maks. 80 znaków)';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextFormField(
-                      controller: _usernameController,
-                      focusNode: _usernameFocusNode,
-                      decoration: _cardFieldDecoration(
-                        'Nazwa użytkownika',
-                        focused: _usernameFocusNode.hasFocus,
-                      ),
-                      validator: (val) {
-                        final v = (val ?? '').trim().toLowerCase();
-                        final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
-                        if (v.isEmpty) return 'Wprowadź nazwę użytkownika';
-                        if (!regex.hasMatch(v))
-                          return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    Stack(
-                      alignment: Alignment.centerRight,
-                      children: [
-                        TextFormField(
-                          initialValue: email.isNotEmpty ? email : '',
-                          enabled: false,
-                          readOnly: true,
-                          decoration: _cardFieldDecoration('E-mail').copyWith(
-                            fillColor: Colors.grey[200],
-                            hintText: email.isNotEmpty ? null : 'Brak email',
-                          ),
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 12.0),
-                          child: IconButton(
-                            iconSize: 20,
-                            icon: Icon(
-                              Icons.info_outline,
-                              color: Colors.grey[600],
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: const Color(0xFFF8F9FA),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder:
-                                    (context) => AlertDialog(
-                                      backgroundColor: const Color(0xFFF8F9FA),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      title: const Text(
-                                        'Informacja',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      content: const Text(
-                                        'Nie można zmienić e-maila przypisanego do konta.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.of(context).pop(),
-                                          child: const Text(
-                                            'OK',
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                            },
+                            title: const Text(
+                              'Informacja',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            content: const Text(
+                              'Nie można zmienić e-maila przypisanego do konta.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text(
+                                  'OK',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 18),

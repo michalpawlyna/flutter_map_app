@@ -52,4 +52,12 @@ class AchievementUnlockedDialog extends StatelessWidget {
       ],
     );
   }
+
+  static Future<void> show(BuildContext context, Achievement achievement) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AchievementUnlockedDialog(achievement: achievement),
+    );
+  }
 }

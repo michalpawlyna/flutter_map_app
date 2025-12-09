@@ -8,6 +8,7 @@ class Place {
   final String address;
   final double lat, lng;
   final String? photoUrl;
+  final int likedCount;
 
   Place({
     required this.id,
@@ -18,6 +19,7 @@ class Place {
     required this.lat,
     required this.lng,
     this.photoUrl,
+    this.likedCount = 0,
   });
 
   factory Place.fromMap(String id, Map<String, dynamic> data) {
@@ -32,6 +34,7 @@ class Place {
       lat: (geo['lat'] as num).toDouble(),
       lng: (geo['long'] as num).toDouble(),
       photoUrl: data['photoUrl'] as String?,
+      likedCount: (data['likedCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

@@ -135,12 +135,9 @@ class _CitiesListState extends State<_CitiesList> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FA),
+                  color: const Color.fromARGB(255, 239, 240, 241),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.grey.shade200,
-                    width: 1.5,
-                  ),
+                  
                 ),
                 child: Row(
                   children: [
