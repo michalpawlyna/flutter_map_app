@@ -179,39 +179,70 @@ class _ProfileScreenState extends State<ProfileScreen>
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Usuń konto'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Aby potwierdzić usunięcie konta, wpisz słowo "delete" poniżej.\n\n'
-                'Uwaga: wszystkie Twoje dane profilu (w tym odznaki, lista odwiedzonych miejsc itp.) zostaną usunięte z bazy danych.',
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final isConfirmed = ctrl.text.trim().toLowerCase() == 'delete';
+            return AlertDialog(
+              backgroundColor: const Color(0xFFF8F9FA),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: ctrl,
-                decoration: const InputDecoration(
-                  hintText: 'Wpisz delete, aby potwierdzić',
+              title: const Text(
+                'Potwierdź usunięcie konta',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'To działanie jest nieodwracalne. Utracisz wszystkie swoje postępy, odznaki i zapisane miejsca.\n\nAby potwierdzić, wpisz "delete" w polu poniżej.',
+                    style: TextStyle(color: Colors.black87, height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: ctrl,
+                    onChanged: (value) => setState(() {}),
+                    decoration: _fieldDecoration('Wpisz "delete"'),
+                    autofocus: true,
+                  ),
+                ],
+              ),
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text(
+                    'Anuluj',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Anuluj'),
-            ),
-            TextButton(
-              onPressed: () {
-                final v = ctrl.text.trim();
-                if (v.toLowerCase() == 'delete') {
-                  Navigator.of(ctx).pop(true);
-                }
-              },
-              child: const Text('Usuń', style: TextStyle(color: Colors.red)),
-            ),
-          ],
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: isConfirmed
+                      ? () => Navigator.of(ctx).pop(true)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: const Text('Usuń'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -224,41 +255,22 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _deleteAccount(User user) async {
     setState(() => _loading = true);
     final uid = user.uid;
+
     try {
+      // First, try to delete the Firebase Auth user.
+      // This is the most likely operation to fail if the user's session is old.
+      await user.delete();
+
+      // If user.delete() is successful, then delete the firestore data.
       try {
         await FirebaseFirestore.instance.collection('users').doc(uid).delete();
       } catch (e) {
+        // This error is less critical, as the auth user is already deleted.
+        // We can just log it.
         debugPrint('[ProfileScreen] firestore user delete failed: $e');
       }
 
-      try {
-        await user.delete();
-      } catch (e) {
-        debugPrint('[ProfileScreen] auth delete failed: $e');
-        if (e is FirebaseAuthException && e.code == 'requires-recent-login') {
-          if (mounted) {
-            toastification.show(
-              context: context,
-              title: const Text('Nie można usunąć konta'),
-              style: ToastificationStyle.flat,
-              type: ToastificationType.error,
-              autoCloseDuration: const Duration(seconds: 6),
-              alignment: Alignment.bottomCenter,
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-            );
-          }
-          try {
-            await _authService.signOut();
-          } catch (_) {}
-          if (mounted) setState(() => _loading = false);
-          return;
-        }
-
-        try {
-          await _authService.signOut();
-        } catch (_) {}
-      }
-
+      // Sign out completely.
       try {
         await _authService.signOut();
       } catch (_) {}
@@ -266,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) {
         toastification.show(
           context: context,
-          title: const Text('Konto usunięte'),
+          title: const Text('Konto usunięte pomyślnie'),
           style: ToastificationStyle.flat,
           type: ToastificationType.success,
           autoCloseDuration: const Duration(seconds: 3),
@@ -276,12 +288,48 @@ class _ProfileScreenState extends State<ProfileScreen>
 
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[ProfileScreen] auth delete failed: $e');
+
+      if (e.code == 'requires-recent-login') {
+        if (mounted) {
+          toastification.show(
+            context: context,
+            title: const Text('Wymagane ponowne zalogowanie'),
+            description: const Text(
+                'Ze względów bezpieczeństwa, zaloguj się ponownie, aby usunąć konto.'),
+            style: ToastificationStyle.flat,
+            type: ToastificationType.error,
+            autoCloseDuration: const Duration(seconds: 6),
+            alignment: Alignment.bottomCenter,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+          );
+        }
+        // Sign the user out so they can log in again.
+        try {
+          await _authService.signOut();
+        } catch (_) {}
+      } else {
+        // Handle other FirebaseAuthExceptions
+        if (mounted) {
+          toastification.show(
+            context: context,
+            title: Text('Błąd podczas usuwania konta: ${e.message}'),
+            style: ToastificationStyle.flat,
+            type: ToastificationType.error,
+            autoCloseDuration: const Duration(seconds: 4),
+            alignment: Alignment.bottomCenter,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+          );
+        }
+      }
     } catch (e) {
+      // Handle any other generic errors
       debugPrint('[ProfileScreen] delete account error: $e');
       if (mounted) {
         toastification.show(
           context: context,
-          title: Text('Błąd podczas usuwania konta: ${e.toString()}'),
+          title: Text('Wystąpił nieoczekiwany błąd: ${e.toString()}'),
           style: ToastificationStyle.flat,
           type: ToastificationType.error,
           autoCloseDuration: const Duration(seconds: 4),

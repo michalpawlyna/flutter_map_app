@@ -389,11 +389,11 @@ class _AchievementTileState extends State<_AchievementTile>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Ikona/Zdjęcie
+                  // Ikona/Zdjęcie (tu zmiana: dla zablokowanych pokazujemy asset)
                   SizedBox(
                     width: 70,
                     height: 70,
-                    child: a.photoUrl != null && a.photoUrl!.isNotEmpty
+                    child: a.photoUrl != null && a.photoUrl!.isNotEmpty && earned
                         ? Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
@@ -403,7 +403,33 @@ class _AchievementTileState extends State<_AchievementTile>
                               ),
                             ),
                           )
-                        : const Icon(Icons.emoji_events, color: Colors.white, size: 36),
+                        : (earned
+                            ? // zdobyte, ale brak photoUrl -> pokaż ikonę trofeum
+                            Container(
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.emoji_events,
+                                    color: Colors.orange.shade400,
+                                    size: 36,
+                                  ),
+                                ),
+                              )
+                            : // NIEZDOBYTE -> pokaż obrazek z assets
+                            Container(
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  // używamy Image.asset jako DecorationImage
+                                ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/locked_achievement.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              )),
                   ),
                   const SizedBox(width: 16),
                   
@@ -569,14 +595,22 @@ class _AchievementTileState extends State<_AchievementTile>
                         shape: BoxShape.circle,
                         color: Colors.transparent,
                       ),
-                      child: a.photoUrl != null && a.photoUrl!.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(a.photoUrl!, fit: BoxFit.cover),
-                            )
-                          : Icon(
-                              Icons.emoji_events,
-                              color: earned ? Colors.orange.shade400 : Colors.grey.shade800,
-                              size: 64,
+                      child: earned
+                          ? (a.photoUrl != null && a.photoUrl!.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(a.photoUrl!, fit: BoxFit.cover),
+                                )
+                              : Icon(
+                                  Icons.emoji_events,
+                                  color: Colors.orange.shade400,
+                                  size: 64,
+                                ))
+                          : // NIEZDOBYTE -> pokaż asset locked
+                          ClipOval(
+                              child: Image.asset(
+                                'assets/locked_achievement.png',
+                                fit: BoxFit.cover,
+                              ),
                             ),
                     ),
                   ),
