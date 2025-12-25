@@ -243,7 +243,7 @@ class _AchievementsList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       itemCount: items.length,
       itemBuilder: (context, i) {
         final a = items[i];
@@ -373,11 +373,11 @@ class _AchievementTileState extends State<_AchievementTile>
         margin: const EdgeInsets.only(bottom: 16),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 239, 240, 241),
-          borderRadius: BorderRadius.circular(16),
+          color: earned ? Colors.green.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: earned ? Colors.green.shade300 : Colors.transparent,
-            width: 1.5,
+            color: earned ? Colors.green.shade300 : Colors.black12,
+            width: 1,
           ),
         ),
         child: Column(
@@ -389,7 +389,6 @@ class _AchievementTileState extends State<_AchievementTile>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Ikona/Zdjęcie (tu zmiana: dla zablokowanych pokazujemy asset)
                   SizedBox(
                     width: 70,
                     height: 70,
@@ -448,17 +447,6 @@ class _AchievementTileState extends State<_AchievementTile>
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          a.desc,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
                     ),
                   ),
@@ -475,7 +463,7 @@ class _AchievementTileState extends State<_AchievementTile>
                             borderRadius: BorderRadius.circular(10),
                             child: LinearProgressIndicator(
                               value: progressPercent,
-                              backgroundColor: Colors.white,
+                              backgroundColor: Colors.black12,
                               color: Colors.green.shade400,
                               minHeight: 6,
                             ),
@@ -490,27 +478,13 @@ class _AchievementTileState extends State<_AchievementTile>
                             ),
                           ),
                         ] else if (earned) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.green.shade300, width: 1),
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.green.shade600, size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Zdobyte',
-                                  style: TextStyle(
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              value: 1.0,
+                              backgroundColor: Colors.green.shade300,
+                              color: Colors.green.shade400,
+                              minHeight: 6,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -557,184 +531,73 @@ class _AchievementTileState extends State<_AchievementTile>
   }
 
   Widget _buildExpandedContent() {
-    final a = widget.achievement;
-    final earned = widget.earned;
-    final target = widget.target;
-    final current = widget.current;
-    final progressPercent = widget.progressPercent;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Duża ikona z progress
-            SizedBox(
-              width: 140,
-              height: 140,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (!earned && target != null && target > 0)
-                    CircularProgressIndicator(
-                      value: progressPercent,
-                      strokeWidth: 8,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
-                    ),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                      ),
-                      child: earned
-                          ? (a.photoUrl != null && a.photoUrl!.isNotEmpty
-                              ? ClipOval(
-                                  child: Image.network(a.photoUrl!, fit: BoxFit.cover),
-                                )
-                              : Icon(
-                                  Icons.emoji_events,
-                                  color: Colors.orange.shade400,
-                                  size: 64,
-                                ))
-                          : // NIEZDOBYTE -> pokaż asset locked
-                          ClipOval(
-                              child: Image.asset(
-                                'assets/locked_achievement.png',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            if (!earned && target != null && target > 0) ...[
-              Text(
-                '$current / $target',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            _buildStatusBadge(),
-            const SizedBox(height: 20),
-            _buildConditionsCard(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    final earned = widget.earned;
     final dateText = _formatUnlockedDate(widget.unlockedValue);
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: earned ? Colors.green.shade50 : Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            earned ? Icons.check_circle : Icons.lock_clock,
-            color: earned ? Colors.green.shade600 : Colors.orange.shade600,
-            size: 14,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            earned ? 'Zdobyte' : 'W trakcie',
-            style: TextStyle(
-              color: earned ? Colors.green.shade700 : Colors.orange.shade700,
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-            ),
-          ),
-          if (earned && dateText != null)
-            Text(
-              ' - $dateText',
-              style: TextStyle(
-                color: Colors.green.shade600,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConditionsCard() {
-    final crit = widget.achievement.criteria;
-    String? conditionText;
-
-    if (widget.achievement.type == 'visit' && crit['target'] is num) {
-      final t = (crit['target'] as num).toInt();
-      final pluralForm = t == 1
-          ? 'miejsce'
-          : (t % 10 >= 2 && t % 10 <= 4 && (t < 10 || t > 20) ? 'miejsca' : 'miejsc');
-      conditionText = 'Odwiedź $t $pluralForm';
-    } else if (crit.isNotEmpty) {
-      final key = crit.keys.first;
-      final value = crit.values.first;
-      conditionText = 'Osiągnij $value w $key';
-    }
-
-    if (conditionText == null) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
+        border: Border(top: BorderSide(color: Colors.green.shade50, width: 1)),
       ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'WARUNEK',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.flag_outlined, color: Colors.orange.shade600, size: 20),
-              const SizedBox(width: 12),
+              Icon(Icons.description_outlined, color: Colors.grey.shade700, size: 16),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  conditionText,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey.shade800,
-                    fontWeight: FontWeight.w500,
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Roboto',
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: 'Opis: ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text: widget.achievement.desc,
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
+          if (widget.earned && dateText != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Icon(Icons.calendar_today, color: Colors.grey.shade700, size: 16),
+                const SizedBox(width: 8),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Roboto',
+                      color: Colors.grey.shade700,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: 'Zdobyto: ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text: dateText,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -759,8 +622,8 @@ class _AchievementTileState extends State<_AchievementTile>
       return val.toString();
     }
 
-    const months = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
-    final day = dt.day.toString().padLeft(2, '0');
+    const months = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
+    final day = dt.day.toString();
     final mon = months[(dt.month - 1).clamp(0, 11)];
     final year = dt.year.toString();
     return '$day $mon $year';

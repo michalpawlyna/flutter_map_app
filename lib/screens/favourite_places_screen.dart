@@ -172,26 +172,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 14, color: Colors.black54),
                           ),
-                          const SizedBox(height: 18),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const SelectCityScreen()),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text('Przeglądaj miejsca'),
-                            ),
-                          ),
+                          
                         ],
                       ),
                     ),
@@ -216,7 +197,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
                     }
 
                     return ListView.separated(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(20),
                       itemCount: places.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
@@ -228,23 +209,23 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
                           onTap: () {
 
                           },
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(4),
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 239, 240, 241),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.transparent, width: 1.2),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.black12, width: 1),
                             ),
                             child: Row(
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: CachedNetworkImage(
                                     cacheManager: _cacheManager,
                                     imageUrl: thumb.isEmpty ? '' : thumb,
-                                    width: 84,
-                                    height: 84,
+                                    width: 64,
+                                    height: 64,
                                     fit: BoxFit.cover,
                                     placeholder: (c, s) => Container(
                                       width: 84,

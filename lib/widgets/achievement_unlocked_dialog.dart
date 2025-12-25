@@ -48,7 +48,7 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       content: SizedBox(
         width: 340,
@@ -81,7 +81,7 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
                 const Text(
                   'Gratulacje!',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -91,31 +91,28 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
                 Text(
                   'Udało ci się odblokować osiągnięcie "${widget.achievement.title}". Odkrywaj dalej i zdobądź je wszystkie!',
                   style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
+                    fontSize: 14,
+                    color: Colors.black54,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                Center(
-                  child: SizedBox(
-                    width: 140,
-                    height: 42,
-                    child: ElevatedButton(
-                      onPressed: _closeDialog,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                        minimumSize: const Size(140, 42),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _closeDialog,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Świetnie!'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'Ok',
-                        style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

@@ -50,7 +50,7 @@ class _SelectPlacesScreenState extends State<SelectPlacesScreen> {
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.only(right: 20),
               child: Center(
                 child: Text(
                   '${_selectedPlaceIds.length}/$maxSelection',
@@ -202,7 +202,7 @@ class _PlacesListState extends State<_PlacesList> {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(20),
                 itemCount: places.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
@@ -234,13 +234,13 @@ class _PlacesListState extends State<_PlacesList> {
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
                         constraints: const BoxConstraints(minHeight: 90),
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 239, 240, 241),
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: selected ? Colors.black : Colors.transparent,
-                            width: 1.5,
+                            color: selected ? Colors.black : Colors.black12,
+                            width: 1,
                           ),
                         ),
                         child: Row(
@@ -252,7 +252,7 @@ class _PlacesListState extends State<_PlacesList> {
                               height: 52,
                               decoration: BoxDecoration(
                                 color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               clipBehavior: Clip.hardEdge,
                               child: photoUrl.isNotEmpty
@@ -267,7 +267,7 @@ class _PlacesListState extends State<_PlacesList> {
                                       placeholder: (context, url) => const ShimmerPlaceholder(
                                         width: 52,
                                         height: 52,
-                                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                                        borderRadius: BorderRadius.all(Radius.circular(4)),
                                       ),
                                       errorWidget: (context, url, error) => Container(
                                         color: Colors.grey[300],
@@ -337,7 +337,7 @@ class _PlacesListState extends State<_PlacesList> {
                                 color: selected ? Colors.black : Colors.transparent,
                                 border: Border.all(
                                   color: selected ? Colors.black : Colors.grey,
-                                  width: 2,
+                                  width: 1,
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -361,7 +361,7 @@ class _PlacesListState extends State<_PlacesList> {
         ),
 
         SafeArea(
-          minimum: const EdgeInsets.all(12),
+          minimum: const EdgeInsets.all(20),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -447,9 +447,9 @@ class _PlacesListState extends State<_PlacesList> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 textStyle: const TextStyle(
                   fontSize: 16,

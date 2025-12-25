@@ -43,7 +43,7 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
         } else {
           toastification.show(
             context: context,
-            title: const Text('Możesz wybrać maksymalnie 4 odznaki.'),
+            title: const Text('Możesz wybrać maksymalnie 1 odznake.'),
             style: ToastificationStyle.flat,
             type: ToastificationType.warning,
             autoCloseDuration: const Duration(seconds: 3),

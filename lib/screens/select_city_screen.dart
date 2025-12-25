@@ -122,7 +122,7 @@ class _CitiesListState extends State<_CitiesList> {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           itemCount: _cities.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
@@ -133,11 +133,11 @@ class _CitiesListState extends State<_CitiesList> {
               onTap: () => _onCityTap(c.id, c.name),
               borderRadius: BorderRadius.circular(16),
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 239, 240, 241),
-                  borderRadius: BorderRadius.circular(16),
-                  
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black12, width: 1),
+                  color: Colors.white,  
                 ),
                 child: Row(
                   children: [

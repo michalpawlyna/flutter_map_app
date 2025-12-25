@@ -49,7 +49,6 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
     }
   }
 
-
   Future<void> _loadMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -57,9 +56,7 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
       setState(() {
         _mode = TransportModeValues.fromStringValue(val);
       });
-    } catch (_) {
-
-    }
+    } catch (_) {}
   }
 
   void _startNavigation() {
@@ -150,18 +147,7 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
       await prefs.setStringList('route_history', list);
       final prev = prefs.getDouble('total_km') ?? 0.0;
       await prefs.setDouble('total_km', (prev + double.parse(km.toStringAsFixed(2))));
-    } catch (_) {
-      
-    }
-  }
-
-
-
-  String _formatElapsed(int seconds) {
-    final h = (seconds ~/ 3600).toString().padLeft(2, '0');
-    final m = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$h:$m:$s';
+    } catch (_) {}
   }
 
   String _formatDuration(double seconds) {
@@ -169,7 +155,7 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
       return '${seconds.toStringAsFixed(0)}s';
     } else if (seconds < 3600) {
       final minutes = (seconds / 60).toStringAsFixed(0);
-      return '${minutes}min';
+      return '${minutes} min';
     } else {
       final hours = (seconds ~/ 3600);
       final minutes = ((seconds % 3600) ~/ 60);
@@ -177,15 +163,28 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
     }
   }
 
-  String _formatRouteDistance(double meters) {
+  String _formatElapsedShort(int seconds) {
+    if (seconds < 3600) {
+      final m = (seconds ~/ 60).toString().padLeft(2, '0');
+      final s = (seconds % 60).toString().padLeft(2, '0');
+      return '$m:$s';
+    } else {
+      final h = (seconds ~/ 3600).toString().padLeft(2, '0');
+      final m = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
+      final s = (seconds % 60).toString().padLeft(2, '0');
+      return '$h:$m:$s';
+    }
+  }
+
+  String _formatKm(double meters, {int decimals = 1}) {
     final km = meters / 1000.0;
-    return km.toStringAsFixed(2).replaceAll('.', ',');
+    return km.toStringAsFixed(decimals).replaceAll('.', ',');
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.route == null) return const SizedBox.shrink();
-    const accent = Color(0xFF6C4AE2);
+    const background = Colors.white;
 
     return Positioned(
       bottom: 16,
@@ -195,11 +194,8 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
+            color: background,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
@@ -208,247 +204,190 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.destinationName != null && widget.destinationName!.isNotEmpty
-                          ? widget.destinationName!
-                          : 'Panel nawigacji',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: widget.onClear,
-                    icon: Icon(Icons.close, color: Colors.grey.shade600),
-                    tooltip: 'Zamknij',
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Dystans trasy',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              )),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_formatRouteDistance(widget.route!.distanceMeters)} km',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 40,
-                      color: Colors.grey.shade300,
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text('Oczekiwany czas',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              )),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDuration(widget.route!.durationSeconds),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Czas upłynął',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            )),
-                        const SizedBox(height: 6),
-                        Text(
-                          _formatElapsed(_elapsedSeconds),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text('Przebyty dystans',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            )),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${(_traveledMeters / 1000.0).toStringAsFixed(2).replaceAll('.', ',')} km',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Transport',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            )),
-                        const SizedBox(height: 6),
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _mode == TransportMode.car
-                                  ? Icons.directions_car
-                                  : _mode == TransportMode.bike
-                                      ? Icons.pedal_bike
-                                      : Icons.directions_walk,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: !_isNavigating
-                        ? ElevatedButton(
-                            onPressed: _startNavigation,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: accent,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Start',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _togglePause,
-                                  icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
-                                  label: Text(_isPaused ? 'Wznów' : 'Pauza'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.black,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              SizedBox(
-                                width: 140,
-                                child: OutlinedButton(
-                                  onPressed: _finishNavigation,
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.grey.shade300),
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text('Zakończ', style: TextStyle(fontWeight: FontWeight.w700)),
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          child: _isNavigating ? _buildNavigatingView(context) : _buildPreStartView(context),
         ),
       ),
+    );
+  }
+
+  Widget _buildPreStartView(BuildContext context) {
+    // pre-start: show expected time (big), route distance (smaller), transport icon on right and Start button
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // big expected time
+                  Text(
+                    _formatDuration(widget.route!.durationSeconds),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${_formatKm(widget.route!.distanceMeters, decimals: 1)} km',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // transport icon circle on right
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+               
+              ),
+              child: Center(
+                child: Icon(
+                  _mode == TransportMode.car
+                      ? Icons.directions_car
+                      : _mode == TransportMode.bike
+                          ? Icons.pedal_bike
+                          : Icons.directions_walk,
+                  color: Colors.black,
+                  size: 22,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // Start button (kept logic as before)
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _startNavigation,
+                icon: const Icon(Icons.navigation, size: 20),
+                label: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Text('Start', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigatingView(BuildContext context) {
+    // navigating: show elapsed time (left), traveled distance (right), and buttons (Zakończ left, Pauza/Wznów right)
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('CZAS TRWANIA',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatElapsedShort(_elapsedSeconds),
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('PRZEBYTY DYSTANS',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${_formatKm(_traveledMeters, decimals: 1)} km',
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+
+        Row(
+          children: [
+            // Zakończ (outlined, left)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _finishNavigation,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.transparent),
+                  foregroundColor: Colors.black,
+                  backgroundColor: Colors.grey.shade200,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Zakończ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Pauza / Wznów (black, right)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _togglePause,
+                icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
+                label: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(_isPaused ? 'Wznów' : 'Pauza', style: const TextStyle(fontWeight: FontWeight.w600,fontSize: 16)),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

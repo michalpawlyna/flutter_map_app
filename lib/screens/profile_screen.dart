@@ -1,3 +1,4 @@
+// profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -25,8 +26,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   final _formKey = GlobalKey<FormState>();
 
-  TextEditingController? _displayNameController;
-  TextEditingController? _usernameController;
+  late final TextEditingController _displayNameController;
+  late final TextEditingController _usernameController;
 
   String _serverDisplayName = '';
   String _serverUsername = '';
@@ -36,13 +37,21 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   late Future<List<Achievement>> _achievementsFuture;
 
-  late FocusNode _displayNameFocusNode;
-  late FocusNode _usernameFocusNode;
+  late final FocusNode _displayNameFocusNode;
+  late final FocusNode _usernameFocusNode;
 
   @override
   void initState() {
     super.initState();
     _achievementsFuture = _loadAchievements();
+
+    // controllers created once
+    _displayNameController = TextEditingController();
+    _usernameController = TextEditingController();
+
+    // attach listeners for UI updates
+    _displayNameController.addListener(_onControllerChanged);
+    _usernameController.addListener(_onControllerChanged);
 
     _displayNameFocusNode = FocusNode()..addListener(_onFocusChanged);
     _usernameFocusNode = FocusNode()..addListener(_onFocusChanged);
@@ -57,10 +66,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _attachListeners() {
-    _displayNameController?.removeListener(_onControllerChanged);
-    _usernameController?.removeListener(_onControllerChanged);
-    _displayNameController?.addListener(_onControllerChanged);
-    _usernameController?.addListener(_onControllerChanged);
+    // ensure single attachment
+    try {
+      _displayNameController.removeListener(_onControllerChanged);
+    } catch (_) {}
+    try {
+      _usernameController.removeListener(_onControllerChanged);
+    } catch (_) {}
+
+    _displayNameController.addListener(_onControllerChanged);
+    _usernameController.addListener(_onControllerChanged);
   }
 
   void _onControllerChanged() {
@@ -73,55 +88,52 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   void dispose() {
-    _displayNameController?.removeListener(_onControllerChanged);
-    _usernameController?.removeListener(_onControllerChanged);
-    _displayNameController?.dispose();
-    _usernameController?.dispose();
+    try {
+      _displayNameController.removeListener(_onControllerChanged);
+    } catch (_) {}
+    try {
+      _usernameController.removeListener(_onControllerChanged);
+    } catch (_) {}
 
-    _displayNameFocusNode.removeListener(_onFocusChanged);
-    _displayNameFocusNode.dispose();
-    _usernameFocusNode.removeListener(_onFocusChanged);
-    _usernameFocusNode.dispose();
+    try {
+      _displayNameController.dispose();
+    } catch (_) {}
+    try {
+      _usernameController.dispose();
+    } catch (_) {}
+
+    try {
+      _displayNameFocusNode.removeListener(_onFocusChanged);
+    } catch (_) {}
+    try {
+      _displayNameFocusNode.dispose();
+    } catch (_) {}
+    try {
+      _usernameFocusNode.removeListener(_onFocusChanged);
+    } catch (_) {}
+    try {
+      _usernameFocusNode.dispose();
+    } catch (_) {}
 
     super.dispose();
   }
 
-  InputDecoration _fieldDecoration(String hint, {bool focused = false}) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.black54),
-      filled: true,
-      fillColor: const Color.fromARGB(255, 239, 240, 241),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 1),
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
-    );
-  }
+  
 
   bool get _hasChanges {
-    final d = _displayNameController?.text.trim() ?? '';
-    final u = _usernameController?.text.trim() ?? '';
+    final d = _displayNameController.text.trim();
+    final u = _usernameController.text.trim();
     return (d != _serverDisplayName) || (u != _serverUsername);
   }
 
   Future<void> _saveChanges(String uid) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final newDisplayName = _displayNameController!.text.trim();
-    final newUsername = _usernameController!.text.trim();
+    final newDisplayName = _displayNameController.text.trim();
+    final newUsername = _usernameController.text.trim();
 
     final changes = <String, dynamic>{};
-    if (newDisplayName != _serverDisplayName)
-      changes['displayName'] = newDisplayName;
+    if (newDisplayName != _serverDisplayName) changes['displayName'] = newDisplayName;
     if (newUsername != _serverUsername) changes['username'] = newUsername;
 
     if (changes.isEmpty) return;
@@ -140,8 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       } catch (_) {}
 
       setState(() {
-        if (changes.containsKey('displayName'))
-          _serverDisplayName = newDisplayName;
+        if (changes.containsKey('displayName')) _serverDisplayName = newDisplayName;
         if (changes.containsKey('username')) _serverUsername = newUsername;
       });
 
@@ -173,104 +184,146 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  Future<void> _confirmAndDeleteAccount(User user) async {
-    final TextEditingController ctrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final isConfirmed = ctrl.text.trim().toLowerCase() == 'delete';
-            return AlertDialog(
-              backgroundColor: const Color(0xFFF8F9FA),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text(
-                'Potwierdź usunięcie konta',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'To działanie jest nieodwracalne. Utracisz wszystkie swoje postępy, odznaki i zapisane miejsca.\n\nAby potwierdzić, wpisz "delete" w polu poniżej.',
-                    style: TextStyle(color: Colors.black87, height: 1.5),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: ctrl,
-                    onChanged: (value) => setState(() {}),
-                    decoration: _fieldDecoration('Wpisz "delete"'),
-                    autofocus: true,
-                  ),
-                ],
-              ),
-              actionsPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text(
-                    'Anuluj',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: isConfirmed
-                      ? () => Navigator.of(ctx).pop(true)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: const Text('Usuń'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  /// Safely set controller text without triggering listener side-effects during build.
+  void _setControllerTextSafely(
+      TextEditingController controller, String text) {
+    if (controller.text == text) return;
 
-    if (confirmed == true) {
-      await _deleteAccount(user);
+    // temporarily remove our listener to avoid setState during build
+    controller.removeListener(_onControllerChanged);
+    try {
+      controller.text = text;
+      // keep selection at end (optional)
+      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+    } finally {
+      controller.addListener(_onControllerChanged);
     }
   }
+
+  Future<void> _confirmAndDeleteAccount(User user) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch, // -> stretch so we can left-align the description
+          children: [
+            // Icon circle on top (centered)
+            Center(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.delete,
+                  color: Colors.black,
+                  size: 28,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Tytuł na środku
+            const Text(
+              'Usuń konto',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Opis wyrównany do lewej
+            const Text(
+              'Ta operacja jest nieodwracalna. Po usunięciu konta utracisz wszystkie swoje postępy, odznaki i zapisane dane.\n\nCzy na pewno chcesz usunąć konto?',
+              textAlign: TextAlign.left, // <- left aligned
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                    ),
+                    child: const Text('Anuluj'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                    ),
+                    child: const Text('Usuń konto'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  if (confirmed == true) {
+    await _deleteAccount(user);
+  }
+}
+
+
+
+
 
   Future<void> _deleteAccount(User user) async {
     setState(() => _loading = true);
     final uid = user.uid;
 
     try {
-      // First, try to delete the Firebase Auth user.
-      // This is the most likely operation to fail if the user's session is old.
+      // Try to delete auth user
       await user.delete();
 
-      // If user.delete() is successful, then delete the firestore data.
+      // Delete firestore data (best-effort)
       try {
         await FirebaseFirestore.instance.collection('users').doc(uid).delete();
       } catch (e) {
-        // This error is less critical, as the auth user is already deleted.
-        // We can just log it.
         debugPrint('[ProfileScreen] firestore user delete failed: $e');
       }
 
-      // Sign out completely.
       try {
         await _authService.signOut();
       } catch (_) {}
@@ -310,7 +363,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           await _authService.signOut();
         } catch (_) {}
       } else {
-        // Handle other FirebaseAuthExceptions
         if (mounted) {
           toastification.show(
             context: context,
@@ -324,7 +376,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         }
       }
     } catch (e) {
-      // Handle any other generic errors
       debugPrint('[ProfileScreen] delete account error: $e');
       if (mounted) {
         toastification.show(
@@ -346,75 +397,111 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return StreamBuilder<User?>(
-      stream: _authService.authStateChanges,
-      builder: (context, authSnapshot) {
-        final user = authSnapshot.data ?? _authService.currentUser;
+    return StreamBuilder<User?>(stream: _authService.authStateChanges, builder: (context, authSnapshot) {
+      final user = authSnapshot.data ?? _authService.currentUser;
 
-        return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_sharp),
-              onPressed:
-                  widget.onBack ?? () => Navigator.of(context).maybePop(),
-              tooltip: 'Powrót',
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_sharp),
+            onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
+            tooltip: 'Powrót',
+          ),
+          title: const Text(
+            'Mój profil',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
             ),
-            title: const Text(
-              'Mój profil',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Builder(
+                builder: (ctx) {
+                  if (user == null) return const SizedBox.shrink();
+                  final uid = user.uid;
+                  if (_saving) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+                  if (!_hasChanges) return const SizedBox.shrink();
+                  return IconButton(
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    onPressed: () => _saveChanges(uid),
+                    tooltip: 'Zapisz zmiany',
+                  );
+                },
               ),
             ),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.black,
-            elevation: 0,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Builder(
-                  builder: (ctx) {
-                    if (user == null) return const SizedBox.shrink();
-                    final uid = user.uid;
-                    if (_saving) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    if (!_hasChanges) return const SizedBox.shrink();
-                    return IconButton(
-                      icon: const Icon(Icons.check, color: Colors.green),
-                      onPressed: () => _saveChanges(uid),
-                      tooltip: 'Zapisz zmiany',
-                    );
-                  },
+          ],
+        ),
+        backgroundColor: Colors.white,
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: user == null ? _buildNotLoggedIn(context) : _buildProfileForUser(user),
+                  ),
                 ),
               ),
+              if (user != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: _loading ? null : () => _confirmAndDeleteAccount(user),
+                      style: TextButton.styleFrom(
+                        
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Usuń konto',
+                                  style: TextStyle(fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red,),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
             ],
           ),
-          backgroundColor: Colors.grey[50],
-          body: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child:
-                    user == null
-                        ? _buildNotLoggedIn(context)
-                        : _buildProfileForUser(user),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 
   Widget _buildNotLoggedIn(BuildContext context) {
@@ -428,10 +515,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           fit: BoxFit.contain,
           errorBuilder:
               (_, __, ___) => const Icon(
-                Icons.image_not_supported,
-                size: 96,
-                color: Colors.grey,
-              ),
+            Icons.image_not_supported,
+            size: 96,
+            color: Colors.grey,
+          ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -449,16 +536,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               textStyle: const TextStyle(
                 fontSize: 16,
@@ -500,20 +585,21 @@ class _ProfileScreenState extends State<ProfileScreen>
         final displayName = appUser?.displayName ?? '';
         final username = appUser?.username ?? '';
 
-        if (_displayNameController == null ||
-            _serverDisplayName != displayName) {
-          _displayNameController?.removeListener(_onControllerChanged);
-          _displayNameController?.dispose();
-          _displayNameController = TextEditingController(text: displayName);
+        // Update controllers' text only when server value changed and field not focused
+        if (_serverDisplayName != displayName) {
           _serverDisplayName = displayName;
+          if (!_displayNameFocusNode.hasFocus) {
+            _setControllerTextSafely(_displayNameController, displayName);
+          }
         }
-        if (_usernameController == null || _serverUsername != username) {
-          _usernameController?.removeListener(_onControllerChanged);
-          _usernameController?.dispose();
-          _usernameController = TextEditingController(text: username);
+        if (_serverUsername != username) {
           _serverUsername = username;
+          if (!_usernameFocusNode.hasFocus) {
+            _setControllerTextSafely(_usernameController, username);
+          }
         }
 
+        // ensure listeners attached
         _attachListeners();
 
         return Form(
@@ -565,7 +651,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                             child: Container(
                               width: 34,
                               height: 34,
-                              // No background or border so badge appears with transparent background
                               child: ClipOval(
                                 child: match.photoUrl != null
                                     ? Image.network(
@@ -636,49 +721,85 @@ class _ProfileScreenState extends State<ProfileScreen>
                     return const SizedBox.shrink();
                   },
                 ),
+      
+              const SizedBox(height: 24),
 
-              const SizedBox(height: 18),
-              const Text(
-                'Imię i nazwisko',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
+              // Display Name field — Outlined TextFormField with black border
               TextFormField(
                 controller: _displayNameController,
                 focusNode: _displayNameFocusNode,
-                decoration: _fieldDecoration('Wprowadź imię i nazwisko',
-                    focused: _displayNameFocusNode.hasFocus),
-                buildCounter: (_,
-                        {required int currentLength,
-                        required bool isFocused,
-                        int? maxLength}) =>
-                    null,
+                textInputAction: TextInputAction.next,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelText: 'Imię i nazwisko',
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black12),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black12),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black, width: 2),
+                  ),
+                  floatingLabelStyle: const TextStyle(color: Colors.black),
+                  suffixIcon: _displayNameController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _displayNameController.clear(),
+                          tooltip: 'Wyczyść',
+                          splashRadius: 18,
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        )
+                      : null,
+                ),
                 validator: (val) {
                   final v = (val ?? '').trim();
                   if (v.isEmpty) return 'Wprowadź imię i nazwisko';
                   if (v.length > 80) return 'Za długie (maks. 80 znaków)';
                   return null;
                 },
+                onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Nazwa użytkownika',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
+              
+              const SizedBox(height: 24),
+
+              // Username field — Outlined TextFormField with black border
               TextFormField(
                 controller: _usernameController,
                 focusNode: _usernameFocusNode,
-                decoration: _fieldDecoration('Wprowadź nazwę użytkownika',
-                    focused: _usernameFocusNode.hasFocus),
+                textInputAction: TextInputAction.done,
+                textCapitalization: TextCapitalization.none,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  labelText: 'Nazwa użytkownika',
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black12),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black12),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.black, width: 2),
+                  ),
+                  floatingLabelStyle: const TextStyle(color: Colors.black),
+                  suffixIcon: _usernameController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _usernameController.clear(),
+                          tooltip: 'Wyczyść',
+                          splashRadius: 18,
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        )
+                      : null,
+                ),
                 validator: (val) {
                   final v = (val ?? '').trim().toLowerCase();
                   final regex = RegExp(r'^[a-z0-9._-]{3,30}$');
@@ -687,121 +808,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     return 'Nieprawidłowa nazwa (3-30: a-z,0-9 . _ -)';
                   return null;
                 },
+                onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'E-mail',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Stack(
-                alignment: Alignment.centerRight,
-                children: [
-                  TextFormField(
-                    initialValue: email.isNotEmpty ? email : '',
-                    enabled: false,
-                    readOnly: true,
-                    decoration:
-                        _fieldDecoration(email.isNotEmpty ? '' : 'Brak email')
-                            .copyWith(
-                      fillColor: Colors.grey[200],
-                    ),
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12.0),
-                    child: IconButton(
-                      iconSize: 20,
-                      icon: Icon(
-                        Icons.info_outline,
-                        color: Colors.grey[600],
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: const Color(0xFFF8F9FA),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            title: const Text(
-                              'Informacja',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            content: const Text(
-                              'Nie można zmienić e-maila przypisanego do konta.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text(
-                                  'OK',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 18),
-
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed:
-                      _loading ? null : () => _confirmAndDeleteAccount(user),
-                  style: TextButton.styleFrom(
-                    backgroundColor:
-                        Theme.of(context).brightness == Brightness.dark
-                            ? Colors.red.shade900.withOpacity(0.2)
-                            : Colors.red.shade50,
-                    foregroundColor:
-                        Theme.of(context).brightness == Brightness.dark
-                            ? Colors.red.shade400
-                            : Colors.red.shade600,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child:
-                      _loading
-                          ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.delete_forever),
-                              SizedBox(width: 8),
-                              Text(
-                                'Usuń konto',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                ),
-              ),
-              const SizedBox(height: 18),
             ],
           ),
         );

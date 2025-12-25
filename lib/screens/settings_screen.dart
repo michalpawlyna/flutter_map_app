@@ -79,26 +79,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Dekoracja pola zgodna ze stylem z ProfileScreen
-  InputDecoration _fieldDecoration(String hint) {
+  // Updated decoration to match LoginScreen outlined TextFormField
+  InputDecoration _fieldDecoration({required String label, Widget? suffix}) {
     return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.black54),
       filled: true,
-      fillColor: const Color.fromARGB(255, 239, 240, 241),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+      fillColor: Colors.white,
+      labelText: label,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black12),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+      enabledBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black12),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 1),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      floatingLabelStyle: const TextStyle(color: Colors.black),
+      suffixIcon: suffix,
     );
   }
 
@@ -126,53 +125,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.white,
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Section title
-                const Text(
-                  'Sposób poruszania',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
                 const SizedBox(height: 12),
 
-                // Exposed dropdown styled like text inputs from ProfileScreen
-                DropdownButtonFormField<TransportMode>(
-                  value: _mode,
-                  decoration: _fieldDecoration('Wybierz sposób poruszania'),
-                  isExpanded: true,
-                  icon: const Icon(Icons.expand_more),
-                  dropdownColor: Colors.white,
-                  menuMaxHeight: 300,
-                  items: TransportMode.values.map((mode) {
-                    return DropdownMenuItem<TransportMode>(
-                      value: mode,
-                      child: Row(
-                        children: [
-                          Icon(_getIcon(mode)),
-                          const SizedBox(width: 12),
-                          Text(
-                            _getLabel(mode),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                // ZASTOSOWANA ZMIANA: LayoutBuilder + PopupMenuButton zamiast DropdownButtonFormField
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return PopupMenuButton<TransportMode>(
+                      // position: .under sprawia, że menu pojawia się POD elementem
+                      position: PopupMenuPosition.under,
+                      
+                      // constraints: ustala szerokość menu taką samą jak szerokość rodzica
+                      constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
+                      
+                      offset: const Offset(0, 4), // opcjonalny mały odstęp w pionie
+                      color: Colors.white,
+                      surfaceTintColor: Colors.white, // Usuwa fioletowy tint w Material 3
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      tooltip: 'Wybierz sposób poruszania',
+                      initialValue: _mode,
+                      
+                      child: InputDecorator(
+                        decoration: _fieldDecoration(
+                        
+                          label: 'Wybierz sposób poruszania',
+
+                          suffix: const Icon(Icons.expand_more),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(_getIcon(_mode), color: Colors.black87),
+                            const SizedBox(width: 12),
+                            Text(
+                              _getLabel(_mode),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Elementy listy rozwijanej
+                      onSelected: (TransportMode mode) async {
+                        await _saveMode(mode);
+                        setState(() => _mode = mode);
+                      },
+                      itemBuilder: (BuildContext context) {
+                        return TransportMode.values.map((mode) {
+                          return PopupMenuItem<TransportMode>(
+                            value: mode,
+                            child: Row(
+                              children: [
+                                Icon(_getIcon(mode), color: Colors.black87),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _getLabel(mode),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList();
+                      },
                     );
-                  }).toList(),
-                  onChanged: (mode) async {
-                    if (mode == null) return;
-                    await _saveMode(mode);
-                    setState(() => _mode = mode);
                   },
                 ),
+
+                const SizedBox(height: 8),
               ],
             ),
           ),

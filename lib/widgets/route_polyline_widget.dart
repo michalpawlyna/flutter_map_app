@@ -13,9 +13,9 @@ class RoutePolylineWidget extends StatefulWidget {
   const RoutePolylineWidget({
     Key? key,
     required this.points,
-    this.strokeWidth = 3.0,
-    this.startColor = const Color(0xFF9B7BFF),
-    this.endColor = const Color(0xFFFD4A9A),
+    this.strokeWidth = 3,
+    this.startColor = const Color(0xFF333333),
+    this.endColor = const Color(0xFF212121),
     this.animate = true,
     this.duration,
   }) : super(key: key);

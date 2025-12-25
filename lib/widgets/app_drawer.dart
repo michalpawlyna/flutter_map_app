@@ -49,12 +49,12 @@ class AppDrawer extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           textStyle: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -298,10 +298,10 @@ class AppDrawer extends StatelessWidget {
                             builder: (ctx) => Dialog(
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                                padding: const EdgeInsets.all(16),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -348,15 +348,15 @@ class AppDrawer extends StatelessWidget {
                                                 Navigator.of(ctx).pop(false),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
-                                                  Colors.grey.shade100,
-                                              foregroundColor: Colors.black87,
+                                                  Colors.black,
+                                              foregroundColor: Colors.white,
                                               elevation: 0,
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                      vertical: 12),
+                                                      vertical: 16),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(8),
+                                                    BorderRadius.circular(12),
                                               ),
                                               textStyle: const TextStyle(
                                                 fontWeight: FontWeight.w600,
@@ -372,15 +372,15 @@ class AppDrawer extends StatelessWidget {
                                                 Navigator.of(ctx).pop(true),
                                             style: TextButton.styleFrom(
                                               backgroundColor:
-                                                  Colors.red.withOpacity(0.1),
+                                                  Colors.white,
                                               foregroundColor: Colors.red,
                                               elevation: 0,
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                      vertical: 12),
+                                                      vertical: 16),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(8),
+                                                    BorderRadius.circular(12),
                                               ),
                                               textStyle: const TextStyle(
                                                 fontWeight: FontWeight.w700,
@@ -402,22 +402,25 @@ class AppDrawer extends StatelessWidget {
                           if (confirm != true) return;
 
                           Navigator.of(drawerContext).pop();
+                          
+                          // Pokaż toast natychmiast
+                          if (scaffoldContext != null && scaffoldContext.mounted) {
+                            toastification.show(
+                              context: scaffoldContext,
+                              title: const Text('Wylogowano pomyślnie'),
+                              style: ToastificationStyle.flat,
+                              type: ToastificationType.success,
+                              autoCloseDuration: const Duration(seconds: 3),
+                              alignment: Alignment.bottomCenter,
+                              margin:
+                                  const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                            );
+                          }
+                          
+                          // Wyloguj w tle
                           try {
                             await authService.signOut();
                             onSelect(0);
-
-                            if (scaffoldContext != null && scaffoldContext.mounted) {
-                              toastification.show(
-                                context: scaffoldContext,
-                                title: const Text('Wylogowano pomyślnie'),
-                                style: ToastificationStyle.flat,
-                                type: ToastificationType.success,
-                                autoCloseDuration: const Duration(seconds: 3),
-                                alignment: Alignment.bottomCenter,
-                                margin:
-                                    const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                              );
-                            }
                           } catch (e) {
                             if (scaffoldContext != null && scaffoldContext.mounted) {
                               toastification.show(

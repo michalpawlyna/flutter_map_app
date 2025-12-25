@@ -59,61 +59,64 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
   }
 
   Future<void> _toggleFavourite() async {
-  final user = _auth.currentUser;
-  if (user == null) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-  // Optymistyczna aktualizacja UI
-  final previousState = _isFavorited;
-  setState(() => _isFavorited = !_isFavorited);
+    // Optymistyczna aktualizacja UI
+    final previousState = _isFavorited;
+    setState(() => _isFavorited = !_isFavorited);
 
-  try {
-    if (previousState) {
-      await _firestore.removePlaceFromFavourites(user.uid, widget.place.id);
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('Usunięto z ulubionych'),
-          style: ToastificationStyle.flat,
-          type: ToastificationType.success,
-          autoCloseDuration: const Duration(seconds: 3),
-          alignment: Alignment.bottomCenter,
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+    try {
+      if (previousState) {
+        await _firestore.removePlaceFromFavourites(user.uid, widget.place.id);
+        if (mounted) {
+          toastification.show(
+            context: context,
+            title: const Text('Usunięto z ulubionych'),
+            style: ToastificationStyle.flat,
+            type: ToastificationType.success,
+            autoCloseDuration: const Duration(seconds: 3),
+            alignment: Alignment.bottomCenter,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+          );
+        }
+      } else {
+        final unlockedAchievements = await _firestore.addPlaceToFavourites(
+          user.uid,
+          widget.place.id,
         );
-      }
-    } else {
-      final unlockedAchievements = await _firestore.addPlaceToFavourites(user.uid, widget.place.id);
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('Dodano do ulubionych'),
-          style: ToastificationStyle.flat,
-          type: ToastificationType.success,
-          autoCloseDuration: const Duration(seconds: 3),
-          alignment: Alignment.bottomCenter,
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-        );
+        if (mounted) {
+          toastification.show(
+            context: context,
+            title: const Text('Dodano do ulubionych'),
+            style: ToastificationStyle.flat,
+            type: ToastificationType.success,
+            autoCloseDuration: const Duration(seconds: 3),
+            alignment: Alignment.bottomCenter,
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+          );
 
-        for (final achievement in unlockedAchievements) {
-          AchievementUnlockedDialog.show(context, achievement);
+          for (final achievement in unlockedAchievements) {
+            AchievementUnlockedDialog.show(context, achievement);
+          }
         }
       }
-    }
-  } catch (e) {
-    // W przypadku błędu przywróć poprzedni stan
-    if (mounted) {
-      setState(() => _isFavorited = previousState);
-      toastification.show(
-        context: context,
-        title: Text('Błąd: ${e.toString()}'),
-        style: ToastificationStyle.flat,
-        type: ToastificationType.error,
-        autoCloseDuration: const Duration(seconds: 4),
-        alignment: Alignment.bottomCenter,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-      );
+    } catch (e) {
+      // W przypadku błędu przywróć poprzedni stan
+      if (mounted) {
+        setState(() => _isFavorited = previousState);
+        toastification.show(
+          context: context,
+          title: Text('Błąd: ${e.toString()}'),
+          style: ToastificationStyle.flat,
+          type: ToastificationType.error,
+          autoCloseDuration: const Duration(seconds: 4),
+          alignment: Alignment.bottomCenter,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        );
+      }
     }
   }
-}
 
   String _composeSpeechText() {
     final b = StringBuffer();
@@ -178,19 +181,21 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                       imageUrl: fullUrl,
                       cacheManager: _imageCacheManager,
                       fadeInDuration: const Duration(milliseconds: 320),
-                      placeholder: (context, url) => Center(
-                        child: ShimmerPlaceholder(
-                          width: double.infinity,
-                          height: 300,
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                      ),
+                      placeholder:
+                          (context, url) => Center(
+                            child: ShimmerPlaceholder(
+                              width: double.infinity,
+                              height: 300,
+                            ),
+                          ),
+                      errorWidget:
+                          (context, url, error) => const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          ),
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -230,16 +235,16 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           topRight: Radius.circular(16),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 40,
+              width: 50,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
@@ -251,40 +256,47 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             children: [
               InkWell(
                 onTap: () => _showFullImage(originalPhotoUrl),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(4),
                 child: Container(
-                  width: 56,
-                  height: 56,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   clipBehavior: Clip.hardEdge,
-                  child: thumbUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: thumbUrl,
-                          cacheManager: _imageCacheManager,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          fadeInDuration: const Duration(milliseconds: 300),
-                          placeholder: (context, url) => const ShimmerPlaceholder(
+                  child:
+                      thumbUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                            imageUrl: thumbUrl,
+                            cacheManager: _imageCacheManager,
                             width: 56,
                             height: 56,
-                            borderRadius: BorderRadius.all(Radius.circular(6)),
-                          ),
-                          errorWidget: (context, url, error) => Container(
+                            fit: BoxFit.cover,
+                            fadeInDuration: const Duration(milliseconds: 300),
+                            placeholder:
+                                (context, url) => const ShimmerPlaceholder(
+                                  width: 56,
+                                  height: 56,
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(6),
+                                  ),
+                                ),
+                            errorWidget:
+                                (context, url, error) => Container(
+                                  color: Colors.grey.shade200,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                          )
+                          : Container(
                             color: Colors.grey.shade200,
                             alignment: Alignment.center,
-                            child: const Icon(Icons.broken_image, color: Colors.grey),
+                            child: const Icon(Icons.photo, color: Colors.grey),
                           ),
-                        )
-                      : Container(
-                          color: Colors.grey.shade200,
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.photo, color: Colors.grey),
-                        ),
                 ),
               ),
 
@@ -298,7 +310,7 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                     Text(
                       widget.place.name,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -308,7 +320,7 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                       Text(
                         widget.place.address,
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           color: Colors.grey,
                         ),
                       ),
@@ -316,40 +328,44 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                 ),
               ),
               if (_auth.currentUser != null)
-  Padding(
-    padding: const EdgeInsets.only(left: 8.0),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 44,
-          height: 44,
-          child: IconButton(
-            onPressed: _toggleFavourite,
-            icon: Icon(
-              _isFavorited ? Icons.favorite : Icons.favorite_border,
-              color: _isFavorited ? Colors.red : Colors.black54,
-            ),
-          ),
-        ),
-        StreamBuilder<int>(
-          stream: _firestore.getPlaceLikedCountStream(widget.place.id),
-          initialData: 0,
-          builder: (context, snapshot) {
-            final likeCount = snapshot.data ?? 0;
-            return Text(
-              likeCount.toString(),
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          onPressed: _toggleFavourite,
+                          icon: Icon(
+                            _isFavorited
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: _isFavorited ? Colors.red : Colors.black54,
+                          ),
+                        ),
+                      ),
+                      StreamBuilder<int>(
+                        stream: _firestore.getPlaceLikedCountStream(
+                          widget.place.id,
+                        ),
+                        initialData: 0,
+                        builder: (context, snapshot) {
+                          final likeCount = snapshot.data ?? 0;
+                          return Text(
+                            likeCount.toString(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -357,18 +373,24 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           // user's `visitedPlaces` contains this place id.
           if (_auth.currentUser != null)
             StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(_auth.currentUser!.uid)
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(_auth.currentUser!.uid)
+                      .snapshots(),
               builder: (context, userSnap) {
                 final data = userSnap.data?.data() ?? <String, dynamic>{};
-                final visited = (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+                final visited =
+                    (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ??
+                    <String>[];
                 final bool isVisited = visited.contains(widget.place.id);
                 if (!isVisited) return const SizedBox.shrink();
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: Colors.lightBlue[50],
@@ -414,8 +436,8 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           Row(
             children: [
               SizedBox(
-                width: 44,
-                height: 44,
+                width: 51,
+                height: 51,
                 child: ValueListenableBuilder<bool>(
                   valueListenable: _tts.isSpeaking,
                   builder: (context, speaking, _) {
@@ -427,11 +449,11 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         side: BorderSide(color: Colors.black.withOpacity(0.08)),
                         backgroundColor: Colors.grey.shade100,
-                        foregroundColor: Colors.black87,
+                        foregroundColor: Colors.black,
                       ),
                       child: Icon(speaking ? Icons.stop : Icons.volume_up),
                     );
@@ -468,9 +490,9 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     textStyle: const TextStyle(
                       fontSize: 16,

@@ -1,3 +1,4 @@
+// login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
@@ -19,7 +20,37 @@ class _LoginScreenState extends State<LoginScreen> {
   String _password = '';
   bool _isRegisterMode = false;
   bool _loading = false;
-  bool _showPassword = false;
+
+  // controllers to support clear buttons and syncing text
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+
+  // password visibility
+  bool _passwordVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: _email)
+      ..addListener(() {
+        setState(() {
+          _email = _emailController.text;
+        });
+      });
+    _passwordController = TextEditingController(text: _password)
+      ..addListener(() {
+        setState(() {
+          _password = _passwordController.text;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,18 +69,18 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
       ),
       backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: _buildAuthForm(),
             ),
           ),
@@ -59,27 +90,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildAuthForm() {
-    InputDecoration _fieldDecoration(String hint) {
-      return InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.black54),
-        filled: true,
-        fillColor: const Color.fromARGB(255, 239, 240, 241),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black, width: 1),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-      );
-    }
-
     return Form(
       key: _formKey,
       child: Column(
@@ -94,12 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 160,
                   height: 160,
                   fit: BoxFit.contain,
-                  errorBuilder:
-                      (_, __, ___) => const Icon(
-                        Icons.image_not_supported,
-                        size: 96,
-                        color: Colors.grey,
-                      ),
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.image_not_supported,
+                    size: 96,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -107,60 +116,99 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 24),
 
-          const Text(
-            'Email',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-
+          // Email field — Outlined TextFormField with black border
           TextFormField(
+            
+            controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            autofillHints: const [AutofillHints.email],
-            decoration: _fieldDecoration('Wprowadź adres email'),
+            textInputAction: TextInputAction.next,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              labelText: 'E-mail',
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              border: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black12),
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black12),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black, width: 2),
+              ),
+              floatingLabelStyle: const TextStyle(color: Colors.black),
+              suffixIcon: _emailController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => _emailController.clear(),
+                      tooltip: 'Wyczyść',
+                      splashRadius: 18,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    )
+                  : null,
+            ),
             validator: (val) {
               final v = val?.trim();
               if (v == null || v.isEmpty) return 'Wprowadź email';
               if (!v.contains('@')) return 'Nieprawidłowy email';
               return null;
             },
-            onChanged: (val) => _email = val.trim(),
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
 
           const SizedBox(height: 16),
 
-          const Text(
-            'Hasło',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-
+          // Password field — Outlined TextFormField with visibility toggle and black border
           TextFormField(
-            decoration: _fieldDecoration('Wprowadź hasło').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _showPassword ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () => setState(() => _showPassword = !_showPassword),
-                tooltip: _showPassword ? 'Ukryj hasło' : 'Pokaż hasło',
+            controller: _passwordController,
+            obscureText: !_passwordVisible,
+            textInputAction: TextInputAction.done,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              labelText: 'Hasło',
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              border: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black12),
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black12),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black, width: 2),
+              ),
+              floatingLabelStyle: const TextStyle(color: Colors.black),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_passwordController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => _passwordController.clear(),
+                      tooltip: 'Wyczyść',
+                      splashRadius: 18,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                  IconButton(
+                    icon: Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
+                    tooltip: _passwordVisible ? 'Ukryj' : 'Pokaż',
+                    splashRadius: 18,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                ],
               ),
             ),
-            obscureText: !_showPassword,
-            enableSuggestions: false,
-            autocorrect: false,
             validator: (val) {
               final v = val ?? '';
               if (v.length < 6) return 'Min. 6 znaków';
               return null;
             },
-            onChanged: (val) => _password = val,
+            onFieldSubmitted: (_) => _submit(),
           ),
 
           const SizedBox(height: 24),
@@ -172,26 +220,25 @@ class _LoginScreenState extends State<LoginScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 textStyle: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              child:
-                  _loading
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                      : Text(_isRegisterMode ? 'Zarejestruj' : 'Zaloguj'),
+              child: _loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Text(_isRegisterMode ? 'Zarejestruj się' : 'Zaloguj się'),
             ),
           ),
 
@@ -215,9 +262,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: OutlinedButton.icon(
               onPressed: _loading ? null : _signInWithGoogle,
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 side: BorderSide(color: Colors.black.withOpacity(0.08)),
                 backgroundColor: Colors.grey.shade100,
@@ -225,8 +272,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               icon: Image.asset(
                 'assets/google.png',
-                width: 22,
-                height: 22,
+                width: 16,
+                height: 16,
                 errorBuilder: (_, __, ___) => const Icon(Icons.login),
               ),
               label: const Text(
@@ -262,9 +309,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void _toggleMode() {
     setState(() {
       _isRegisterMode = !_isRegisterMode;
+      _emailController.clear();
+      _passwordController.clear();
       _email = '';
       _password = '';
-      _showPassword = false;
     });
   }
 
@@ -278,10 +326,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
       if (_isRegisterMode) {
-        await _authService.registerWithEmail(_email, _password);
+        await _authService.registerWithEmail(email, password);
       } else {
-        await _authService.loginWithEmail(_email, _password);
+        await _authService.loginWithEmail(email, password);
       }
 
       if (!mounted) return;

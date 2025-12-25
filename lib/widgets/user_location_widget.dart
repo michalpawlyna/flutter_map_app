@@ -8,10 +8,14 @@ import 'package:latlong2/latlong.dart';
 class UserLocationWidget extends StatefulWidget {
   final Stream<Position> positionStream;
   final double minAccuracyRadius;
+  final double minMovementThreshold; // Minimalne przemieszczenie w metrach
+  final double smoothingFactor; // 0.0-1.0, wyższe = bardziej wygładzone
 
   const UserLocationWidget({
     required this.positionStream,
     this.minAccuracyRadius = 25.0,
+    this.minMovementThreshold = 10.0,
+    this.smoothingFactor = 0.3,
     Key? key,
   }) : super(key: key);
 
@@ -21,6 +25,8 @@ class UserLocationWidget extends StatefulWidget {
 
 class _UserLocationWidgetState extends State<UserLocationWidget> {
   late final Stream<Position> _mergedStream;
+  Position? _lastPosition;
+  Position? _smoothedPosition;
 
   @override
   void initState() {
@@ -28,18 +34,47 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
     _mergedStream = _createMergedStream();
   }
 
+  // Oblicza dystans między dwoma pozycjami w metrach
+  double _calculateDistance(Position pos1, Position pos2) {
+    const distance = Distance();
+    return distance(
+      LatLng(pos1.latitude, pos1.longitude),
+      LatLng(pos2.latitude, pos2.longitude),
+    );
+  }
+
+  // Tworzy interpolowaną pozycję przy użyciu low-pass filtra
+  Position _smoothPosition(Position newPosition, Position lastPosition) {
+    final factor = widget.smoothingFactor;
+    
+    return Position(
+      latitude: lastPosition.latitude + (newPosition.latitude - lastPosition.latitude) * factor,
+      longitude: lastPosition.longitude + (newPosition.longitude - lastPosition.longitude) * factor,
+      timestamp: newPosition.timestamp,
+      accuracy: lastPosition.accuracy + (newPosition.accuracy - lastPosition.accuracy) * factor,
+      altitude: lastPosition.altitude + (newPosition.altitude - lastPosition.altitude) * factor,
+      altitudeAccuracy: lastPosition.altitudeAccuracy + (newPosition.altitudeAccuracy - lastPosition.altitudeAccuracy) * factor,
+      heading: lastPosition.heading + (newPosition.heading - lastPosition.heading) * factor,
+      headingAccuracy: lastPosition.headingAccuracy + (newPosition.headingAccuracy - lastPosition.headingAccuracy) * factor,
+      speed: lastPosition.speed + (newPosition.speed - lastPosition.speed) * factor,
+      speedAccuracy: lastPosition.speedAccuracy + (newPosition.speedAccuracy - lastPosition.speedAccuracy) * factor,
+    );
+  }
+
   Stream<Position> _createMergedStream() async* {
     try {
       final last = await Geolocator.getLastKnownPosition();
       if (last != null) {
+        _lastPosition = last;
+        _smoothedPosition = last;
         yield last;
-        yield* widget.positionStream;
-        return;
       }
 
       try {
         final current = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.low);
+        _lastPosition = current;
+        _smoothedPosition = current;
         yield current;
       } catch (_) {
 
@@ -48,7 +83,26 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
 
     }
 
-    yield* widget.positionStream;
+    await for (final position in widget.positionStream) {
+      if (_lastPosition == null) {
+        _lastPosition = position;
+        _smoothedPosition = position;
+        yield position;
+        continue;
+      }
+
+      // Sprawdzenie dystansu od ostatniej pozycji
+      final distance = _calculateDistance(position, _lastPosition!);
+      
+      if (distance >= widget.minMovementThreshold) {
+        // Przemieszczenie jest wystarczająco duże - zastosuj smoothing
+        final smoothed = _smoothPosition(position, _lastPosition!);
+        _lastPosition = position;
+        _smoothedPosition = smoothed;
+        yield smoothed;
+      }
+      // Jeśli dystans jest mniejszy niż próg, ignoruj tę pozycję
+    }
   }
 
   @override
@@ -65,33 +119,19 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
         final accuracy = position.accuracy;
         final radius = max(widget.minAccuracyRadius, accuracy);
 
-        return Stack(
-          children: [
-            CircleLayer(
-              circles: [
-                CircleMarker(
-                  point: latLng,
-                  useRadiusInMeter: true,
-                  radius: radius,
-                  color: Colors.blue.withOpacity(0.18),
+        return MarkerLayer(
+          markers: [
+            Marker(
+              point: latLng,
+              width: 12,
+              height: 12,
+              alignment: Alignment.center,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: latLng,
-                  width: 12,
-                  height: 12,
-                  alignment: Alignment.center,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.blue,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         );

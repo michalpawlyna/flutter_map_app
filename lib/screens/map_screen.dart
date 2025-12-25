@@ -10,7 +10,6 @@ import 'package:toastification/toastification.dart';
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
 import '../widgets/places_markers_widget.dart';
-import '../widgets/proximity_alert_dialog.dart';
 import '../models/place.dart';
 import '../services/location_service.dart';
 import '../services/firestore_service.dart';
@@ -62,6 +61,8 @@ class _MapScreenState extends State<MapScreen>
   String? _destinationName;
   List<String>? _visitOrderIds;
 
+  final GlobalKey _routeInfoKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -84,12 +85,7 @@ class _MapScreenState extends State<MapScreen>
       });
 
       if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
-        _animatedMapController.mapController.fitCamera(
-          CameraFit.bounds(
-            bounds: LatLngBounds.fromPoints(_currentRoute!.points),
-            padding: const EdgeInsets.all(40),
-          ),
-        );
+        _fitRouteWithPadding();
       }
 
       // Raportuj utworzenie trasy w tle (bez czekania)
@@ -145,7 +141,6 @@ class _MapScreenState extends State<MapScreen>
     }
   }
 
-
   Future<void> _initProximity(Stream<Position> positionStream) async {
     final places = await _firestore_service_getAllPlaces();
     if (!mounted) return;
@@ -184,16 +179,6 @@ class _MapScreenState extends State<MapScreen>
           }
         }
 
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder:
-              (ctx) => ProximityAlertDialog(
-                place: place,
-                tts: _tts,
-                onClose: () => _proximityService?.alertClosed(),
-              ),
-        );
       },
     );
 
@@ -219,6 +204,34 @@ class _MapScreenState extends State<MapScreen>
 
   Future<List<Place>> _firestore_service_getAllPlaces() =>
       _firestoreService.getAllPlaces();
+
+  void _fitRouteWithPadding() {
+    if (_currentRoute == null || _currentRoute!.points.isEmpty) return;
+
+    // Czekaj na render RouteInfoWidget
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final RenderBox? routeInfoRender = _routeInfoKey.currentContext?.findRenderObject() as RenderBox?;
+
+      double bottomPadding = 40; // domyślny padding
+
+      if (routeInfoRender != null) {
+        // Oblicz wysokość RouteInfoWidget
+        bottomPadding = routeInfoRender.size.height + 20;
+      }
+
+      _animatedMapController.mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(_currentRoute!.points),
+          padding: EdgeInsets.only(
+            top: 60,
+            left: 60,
+            right: 60,
+            bottom: bottomPadding, // dynamiczny padding u dołu
+          ),
+        ),
+      );
+    });
+  }
 
   @override
   void dispose() {
@@ -300,14 +313,7 @@ class _MapScreenState extends State<MapScreen>
                           _visitOrderIds = null;
                         }
                       });
-                      if (route.points.isNotEmpty) {
-                        _animatedMapController.mapController.fitCamera(
-                          CameraFit.bounds(
-                            bounds: LatLngBounds.fromPoints(route.points),
-                            padding: const EdgeInsets.all(40),
-                          ),
-                        );
-                      }
+                      _fitRouteWithPadding();
                     },
                   ),
                   UserLocationWidget(positionStream: _positionStream),
@@ -315,18 +321,19 @@ class _MapScreenState extends State<MapScreen>
               ),
               CenterOnUserButton(mapController: _animatedMapController),
               MenuButton(scaffoldKey: widget.scaffoldKey),
-                    RouteInfoWidget(
-                      route: _currentRoute,
-                      destinationName: _destinationName,
-                      locationService: _locationService,
-                      onClear: () {
-                        setState(() {
-                          _currentRoute = null;
-                          _destinationName = null;
-                          _visitOrderIds = null;
-                        });
-                      },
-                    ),
+              RouteInfoWidget(
+                key: _routeInfoKey,
+                route: _currentRoute,
+                destinationName: _destinationName,
+                locationService: _locationService,
+                onClear: () {
+                  setState(() {
+                    _currentRoute = null;
+                    _destinationName = null;
+                    _visitOrderIds = null;
+                  });
+                },
+              ),
             ],
           ),
         );

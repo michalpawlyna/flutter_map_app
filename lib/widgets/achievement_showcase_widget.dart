@@ -27,11 +27,9 @@ class AchievementShowcaseWidget extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? theme.cardColor : const Color(0xFFF8F9FA);
-    final borderColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+    final cardBg = Colors.white;
+    final borderColor = Colors.black12;
 
-    // Only a single equipped achievement is allowed now.
     const int columns = 1;
     final int slots = columns;
     final int shown = equippedAchievements.isNotEmpty ? 1 : 0;
@@ -40,8 +38,8 @@ class AchievementShowcaseWidget extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.black12, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,7 +49,7 @@ class AchievementShowcaseWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'Gablota osiągnięć',
+                'Przypięte osiągnięcie',
                 style: TextStyle(
                   fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -71,7 +69,7 @@ class AchievementShowcaseWidget extends StatelessWidget {
                     );
                   },
                   child: Icon(
-                    Icons.tune,
+                    Icons.edit_outlined,
                     size: 20,
                     color: Colors.black87,
                   ),
@@ -147,7 +145,7 @@ class _AchievementTile extends StatelessWidget {
                       width: 64,
                       height: 64,
                       alignment: Alignment.center,
-                      color: Colors.grey.shade200,
+                      color: Colors.white,
                       child: const Icon(Icons.error),
                     ),
                   )
@@ -155,7 +153,7 @@ class _AchievementTile extends StatelessWidget {
                     width: 64,
                     height: 64,
                     alignment: Alignment.center,
-                    color: Colors.grey.shade200,
+                    color: Colors.white,
                     child: const Icon(Icons.shield),
                   ),
           ),
@@ -172,8 +170,7 @@ class _AddSlotTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -182,14 +179,14 @@ class _AddSlotTile extends StatelessWidget {
         Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(4),
             onTap: onTap,
             child: DottedBorder(
               borderType: BorderType.Circle,
               dashPattern: const [6, 4],
-              strokeWidth: 2,
-              color: borderColor,
-              radius: const Radius.circular(999),
+              strokeWidth: 1,
+              color: Colors.black12,
+              radius: const Radius.circular(4),
               child: Container(
                 width: 48,
                 height: 48,
