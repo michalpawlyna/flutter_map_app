@@ -7,23 +7,27 @@ class AchievementService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<Achievement>> checkAndGrantAchievements(
-      AppUser user, AchievementType type) async {
+    AppUser user,
+    AchievementType type,
+  ) async {
     if (type == AchievementType.unknown) {
       return [];
     }
 
     try {
-      final achQuery = await _firestore
-          .collection('achievements')
-          .where('type', isEqualTo: type.asString)
-          .get();
+      final achQuery =
+          await _firestore
+              .collection('achievements')
+              .where('type', isEqualTo: type.asString)
+              .get();
 
       final newlyUnlocked = <Achievement>[];
       final userRef = _firestore.collection('users').doc(user.uid);
 
       for (final achDoc in achQuery.docs) {
         final achievement = Achievement.fromSnapshot(achDoc);
-        final alreadyUnlocked = user.achievementsSummary[achievement.id] == true;
+        final alreadyUnlocked =
+            user.achievementsSummary[achievement.id] == true;
 
         if (alreadyUnlocked) {
           continue;
@@ -54,7 +58,9 @@ class AchievementService {
           newlyUnlocked.add(achievement);
           await userRef.set({
             'achievementsSummary': {achievement.id: true},
-            'achievementsUnlockedAt': {achievement.id: FieldValue.serverTimestamp()},
+            'achievementsUnlockedAt': {
+              achievement.id: FieldValue.serverTimestamp(),
+            },
           }, SetOptions(merge: true));
         }
       }

@@ -27,7 +27,9 @@ class CenterOnUserButton extends StatelessWidget {
 
       Position? pos = await Geolocator.getLastKnownPosition();
       if (pos == null) {
-        pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
       }
 
       if (last == null ||
@@ -68,7 +70,11 @@ class CenterOnUserButton extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.navigation_rounded, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.navigation_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
         ),
       ),

@@ -20,23 +20,29 @@ class ShimmerPlaceholder extends StatelessWidget {
     final baseColor = Colors.grey.shade300;
     final highlightColor = Colors.grey.shade100;
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final w = width ?? (constraints.maxWidth.isFinite ? constraints.maxWidth : 100.0);
-      final h = height ?? (constraints.maxHeight.isFinite ? constraints.maxHeight : 56.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w =
+            width ??
+            (constraints.maxWidth.isFinite ? constraints.maxWidth : 100.0);
+        final h =
+            height ??
+            (constraints.maxHeight.isFinite ? constraints.maxHeight : 56.0);
 
-      return Container(
-        width: w,
-        height: h,
-        margin: margin,
-        child: ClipRRect(
-          borderRadius: borderRadius ?? BorderRadius.zero,
-          child: Shimmer.fromColors(
-            baseColor: baseColor,
-            highlightColor: highlightColor,
-            child: Container(color: baseColor, width: w, height: h),
+        return Container(
+          width: w,
+          height: h,
+          margin: margin,
+          child: ClipRRect(
+            borderRadius: borderRadius ?? BorderRadius.zero,
+            child: Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: Container(color: baseColor, width: w, height: h),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

@@ -79,7 +79,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Updated decoration to match LoginScreen outlined TextFormField
   InputDecoration _fieldDecoration({required String label, Widget? suffix}) {
     return InputDecoration(
       filled: true,
@@ -103,110 +102,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_sharp),
-            onPressed: () => Navigator.of(context).maybePop(),
-            tooltip: 'Powrót',
-          ),
-          title: const Text(
-            'Ustawienia',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-              fontSize: 20,
-            ),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 0,
+    appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_sharp),
+        onPressed: () => Navigator.of(context).maybePop(),
+        tooltip: 'Powrót',
+      ),
+      title: const Text(
+        'Ustawienia',
+        style: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w600,
+          fontSize: 20,
         ),
-        backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
+      ),
+      centerTitle: true,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      elevation: 0,
+    ),
+    backgroundColor: Colors.white,
+    body: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
 
-                // ZASTOSOWANA ZMIANA: LayoutBuilder + PopupMenuButton zamiast DropdownButtonFormField
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return PopupMenuButton<TransportMode>(
-                      // position: .under sprawia, że menu pojawia się POD elementem
-                      position: PopupMenuPosition.under,
-                      
-                      // constraints: ustala szerokość menu taką samą jak szerokość rodzica
-                      constraints: BoxConstraints.tightFor(width: constraints.maxWidth),
-                      
-                      offset: const Offset(0, 4), // opcjonalny mały odstęp w pionie
-                      color: Colors.white,
-                      surfaceTintColor: Colors.white, // Usuwa fioletowy tint w Material 3
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      tooltip: 'Wybierz sposób poruszania',
-                      initialValue: _mode,
-                      
-                      child: InputDecorator(
-                        decoration: _fieldDecoration(
-                        
-                          label: 'Wybierz sposób poruszania',
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return PopupMenuButton<TransportMode>(
+                  position: PopupMenuPosition.under,
 
-                          suffix: const Icon(Icons.expand_more),
+                  constraints: BoxConstraints.tightFor(
+                    width: constraints.maxWidth,
+                  ),
+
+                  offset: const Offset(0, 4),
+                  color: Colors.white,
+                  surfaceTintColor: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  tooltip: 'Wybierz sposób poruszania',
+                  initialValue: _mode,
+
+                  child: InputDecorator(
+                    decoration: _fieldDecoration(
+                      label: 'Wybierz sposób poruszania',
+
+                      suffix: const Icon(Icons.expand_more),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(_getIcon(_mode), color: Colors.black87),
+                        const SizedBox(width: 12),
+                        Text(
+                          _getLabel(_mode),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+
+                  onSelected: (TransportMode mode) async {
+                    await _saveMode(mode);
+                    setState(() => _mode = mode);
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return TransportMode.values.map((mode) {
+                      return PopupMenuItem<TransportMode>(
+                        value: mode,
                         child: Row(
                           children: [
-                            Icon(_getIcon(_mode), color: Colors.black87),
+                            Icon(_getIcon(mode), color: Colors.black87),
                             const SizedBox(width: 12),
                             Text(
-                              _getLabel(_mode),
+                              _getLabel(mode),
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      
-                      // Elementy listy rozwijanej
-                      onSelected: (TransportMode mode) async {
-                        await _saveMode(mode);
-                        setState(() => _mode = mode);
-                      },
-                      itemBuilder: (BuildContext context) {
-                        return TransportMode.values.map((mode) {
-                          return PopupMenuItem<TransportMode>(
-                            value: mode,
-                            child: Row(
-                              children: [
-                                Icon(_getIcon(mode), color: Colors.black87),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _getLabel(mode),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList();
-                      },
-                    );
+                      );
+                    }).toList();
                   },
-                ),
-
-                const SizedBox(height: 8),
-              ],
+                );
+              },
             ),
-          ),
+
+            const SizedBox(height: 8),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }

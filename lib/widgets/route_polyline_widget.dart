@@ -52,7 +52,8 @@ class _RoutePolylineWidgetState extends State<RoutePolylineWidget>
     if (a == null || b == null) return false;
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
-      if (a[i].latitude != b[i].latitude || a[i].longitude != b[i].longitude) return false;
+      if (a[i].latitude != b[i].latitude || a[i].longitude != b[i].longitude)
+        return false;
     }
     return true;
   }
@@ -67,9 +68,9 @@ class _RoutePolylineWidgetState extends State<RoutePolylineWidget>
 
     final nSegments = pts.length - 1;
     final intSegments = nSegments;
-  final computedMs = (intSegments * 40) + 400;
-  final ms = widget.duration?.inMilliseconds ?? computedMs.clamp(600, 3000);
-  _controller.duration = Duration(milliseconds: ms);
+    final computedMs = (intSegments * 40) + 400;
+    final ms = widget.duration?.inMilliseconds ?? computedMs.clamp(600, 3000);
+    _controller.duration = Duration(milliseconds: ms);
     _controller.reset();
     _controller.forward();
   }
@@ -92,7 +93,9 @@ class _RoutePolylineWidgetState extends State<RoutePolylineWidget>
 
       for (int i = 0; i < nSegments; i++) {
         final t = nSegments <= 1 ? 0.0 : (i / (nSegments - 1));
-        final color = Color.lerp(widget.startColor, widget.endColor, t) ?? widget.startColor;
+        final color =
+            Color.lerp(widget.startColor, widget.endColor, t) ??
+            widget.startColor;
         segments.add(
           Polyline(
             points: [pts[i], pts[i + 1]],
@@ -118,7 +121,9 @@ class _RoutePolylineWidgetState extends State<RoutePolylineWidget>
         final List<Polyline> segments = <Polyline>[];
         for (int i = 0; i < full; i++) {
           final t = nSegments <= 1 ? 0.0 : (i / (nSegments - 1));
-          final color = Color.lerp(widget.startColor, widget.endColor, t) ?? widget.startColor;
+          final color =
+              Color.lerp(widget.startColor, widget.endColor, t) ??
+              widget.startColor;
           segments.add(
             Polyline(
               points: [pts[i], pts[i + 1]],
@@ -135,7 +140,9 @@ class _RoutePolylineWidgetState extends State<RoutePolylineWidget>
           final lon = a.longitude + (b.longitude - a.longitude) * frac;
           final interm = LatLng(lat, lon);
           final t = nSegments <= 1 ? 0.0 : (full / (nSegments - 1));
-          final color = Color.lerp(widget.startColor, widget.endColor, t) ?? widget.startColor;
+          final color =
+              Color.lerp(widget.startColor, widget.endColor, t) ??
+              widget.startColor;
           segments.add(
             Polyline(
               points: [a, interm],

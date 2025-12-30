@@ -15,7 +15,7 @@ class SelectPlacesScreen extends StatefulWidget {
   final String cityName;
 
   const SelectPlacesScreen({Key? key, this.cityId, required this.cityName})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<SelectPlacesScreen> createState() => _SelectPlacesScreenState();
@@ -34,48 +34,48 @@ class _SelectPlacesScreenState extends State<SelectPlacesScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_sharp),
-            onPressed: () => Navigator.of(context).maybePop(),
-            tooltip: 'Powrót',
-          ),
-          title: const Text(
-            'Wybierz miejsca',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-              fontSize: 20,
-            ),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 20),
-              child: Center(
-                child: Text(
-                  '${_selectedPlaceIds.length}/$maxSelection',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
+    appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_sharp),
+        onPressed: () => Navigator.of(context).maybePop(),
+        tooltip: 'Powrót',
+      ),
+      title: const Text(
+        'Wybierz miejsca',
+        style: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w600,
+          fontSize: 20,
+        ),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 20),
+          child: Center(
+            child: Text(
+              '${_selectedPlaceIds.length}/$maxSelection',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
-          ],
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.black,
-          elevation: 0,
+          ),
         ),
-        backgroundColor: Colors.white,
-        body: _PlacesList(
-          cityId: widget.cityId,
-          cityName: widget.cityName,
-          selectedPlaceIds: _selectedPlaceIds,
-          onSelectionChanged: _updateSelection,
-        ),
-      );
+      ],
+      centerTitle: true,
+      backgroundColor: Colors.transparent,
+      foregroundColor: Colors.black,
+      elevation: 0,
+    ),
+    backgroundColor: Colors.white,
+    body: _PlacesList(
+      cityId: widget.cityId,
+      cityName: widget.cityName,
+      selectedPlaceIds: _selectedPlaceIds,
+      onSelectionChanged: _updateSelection,
+    ),
+  );
 }
 
 class _PlacesList extends StatefulWidget {
@@ -121,17 +121,18 @@ class _PlacesListState extends State<_PlacesList> {
         await LocationService().ensureLocationEnabledAndPermitted();
 
         final Position? last = await Geolocator.getLastKnownPosition();
-        final Position pos = last ??
-            await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        final Position pos =
+            last ??
+            await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high,
+            );
 
         if (mounted) {
           setState(() {
             _currentLocation = LatLng(pos.latitude, pos.longitude);
           });
         }
-      } catch (_) {
-        // ignore
-      }
+      } catch (_) {}
     });
   }
 
@@ -209,10 +210,14 @@ class _PlacesListState extends State<_PlacesList> {
                   final p = places[index];
                   final key = p.id;
                   final selected = widget.selectedPlaceIds.contains(key);
-                  final canSelect = selected || widget.selectedPlaceIds.length < maxSelection;
+                  final canSelect =
+                      selected || widget.selectedPlaceIds.length < maxSelection;
 
                   final photoUrl = p.photoUrl ?? '';
-                  final thumbUrl = transformedCloudinaryUrl(photoUrl, width: 360);
+                  final thumbUrl = transformedCloudinaryUrl(
+                    photoUrl,
+                    width: 360,
+                  );
 
                   double? distanceMeters;
                   if (_currentLocation != null) {
@@ -246,7 +251,6 @@ class _PlacesListState extends State<_PlacesList> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Image / avatar
                             Container(
                               width: 52,
                               height: 52,
@@ -255,41 +259,53 @@ class _PlacesListState extends State<_PlacesList> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               clipBehavior: Clip.hardEdge,
-                              child: photoUrl.isNotEmpty
-                                  ? CachedNetworkImage(
-                                      imageUrl: thumbUrl,
-                                      cacheManager: _imageCacheManager,
-                                      width: 52,
-                                      height: 52,
-                                      fit: BoxFit.cover,
-                                      fadeInDuration:
-                                          const Duration(milliseconds: 300),
-                                      placeholder: (context, url) => const ShimmerPlaceholder(
+                              child:
+                                  photoUrl.isNotEmpty
+                                      ? CachedNetworkImage(
+                                        imageUrl: thumbUrl,
+                                        cacheManager: _imageCacheManager,
                                         width: 52,
                                         height: 52,
-                                        borderRadius: BorderRadius.all(Radius.circular(4)),
-                                      ),
-                                      errorWidget: (context, url, error) => Container(
-                                        color: Colors.grey[300],
-                                        alignment: Alignment.center,
-                                        child: const Icon(Icons.broken_image, color: Colors.grey),
-                                      ),
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.grey[600],
+                                        fit: BoxFit.cover,
+                                        fadeInDuration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        placeholder:
+                                            (context, url) =>
+                                                const ShimmerPlaceholder(
+                                                  width: 52,
+                                                  height: 52,
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                        Radius.circular(4),
+                                                      ),
+                                                ),
+                                        errorWidget:
+                                            (context, url, error) => Container(
+                                              color: Colors.grey[300],
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                      )
+                                      : Center(
+                                        child: Text(
+                                          p.name.isNotEmpty
+                                              ? p.name[0].toUpperCase()
+                                              : '?',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.grey[600],
+                                          ),
                                         ),
                                       ),
-                                    ),
                             ),
 
                             const SizedBox(width: 14),
 
-                            // Name + distance (with icon)
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,25 +345,28 @@ class _PlacesListState extends State<_PlacesList> {
 
                             const SizedBox(width: 8),
 
-                            // Custom checkbox
                             Container(
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: selected ? Colors.black : Colors.transparent,
+                                color:
+                                    selected
+                                        ? Colors.black
+                                        : Colors.transparent,
                                 border: Border.all(
                                   color: selected ? Colors.black : Colors.grey,
                                   width: 1,
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: selected
-                                  ? const Icon(
-                                      Icons.check,
-                                      size: 16,
-                                      color: Colors.white,
-                                    )
-                                  : null,
+                              child:
+                                  selected
+                                      ? const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      )
+                                      : null,
                             ),
                           ],
                         ),
@@ -365,84 +384,97 @@ class _PlacesListState extends State<_PlacesList> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: (widget.selectedPlaceIds.isEmpty || _loading)
-                  ? null
-                  : () async {
-                      setState(() => _loading = true);
-                      try {
-                        final snapshotPlaces = await _future;
-                        final selectedPlaces = snapshotPlaces
-                            .where((p) => widget.selectedPlaceIds.contains(p.id))
-                            .toList();
-                        await LocationService().ensureLocationEnabledAndPermitted();
-                        Position? pos = await Geolocator.getLastKnownPosition();
-                        if (pos == null) {
-                          pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-                        }
-                        final start = LatLng(pos.latitude, pos.longitude);
+              onPressed:
+                  (widget.selectedPlaceIds.isEmpty || _loading)
+                      ? null
+                      : () async {
+                        setState(() => _loading = true);
+                        try {
+                          final snapshotPlaces = await _future;
+                          final selectedPlaces =
+                              snapshotPlaces
+                                  .where(
+                                    (p) =>
+                                        widget.selectedPlaceIds.contains(p.id),
+                                  )
+                                  .toList();
+                          await LocationService()
+                              .ensureLocationEnabledAndPermitted();
+                          Position? pos =
+                              await Geolocator.getLastKnownPosition();
+                          if (pos == null) {
+                            pos = await Geolocator.getCurrentPosition(
+                              desiredAccuracy: LocationAccuracy.high,
+                            );
+                          }
+                          final start = LatLng(pos.latitude, pos.longitude);
 
-                        final List<Place> remaining = List.from(
-                          selectedPlaces,
-                        );
-                        final List<Place> visitOrder = [];
-                        LatLng current = start;
-                        final Distance dist = Distance();
-
-                        while (remaining.isNotEmpty) {
-                          remaining.sort((a, b) {
-                            final da = dist(current, LatLng(a.lat, a.lng));
-                            final db = dist(current, LatLng(b.lat, b.lng));
-                            return da.compareTo(db);
-                          });
-                          final next = remaining.removeAt(0);
-                          visitOrder.add(next);
-                          current = LatLng(next.lat, next.lng);
-                        }
-
-                        final waypoints = <LatLng>[start];
-                        waypoints.addAll(
-                          visitOrder.map((p) => LatLng(p.lat, p.lng)),
-                        );
-
-                        final route = await RouteService()
-                            .getWalkingRouteFromWaypoints(waypoints);
-
-                        if (mounted) {
-                          Navigator.of(context).pop({
-                            'route': route,
-                            'places': visitOrder
-                                .map((p) => {
-                                      'id': p.id,
-                                      'name': p.name,
-                                      'photoUrl': p.photoUrl ?? '',
-                                    })
-                                .toList(),
-                          });
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Błąd tworzenia trasy: ${e.toString()}',
-                              ),
-                            ),
+                          final List<Place> remaining = List.from(
+                            selectedPlaces,
                           );
+                          final List<Place> visitOrder = [];
+                          LatLng current = start;
+                          final Distance dist = Distance();
+
+                          while (remaining.isNotEmpty) {
+                            remaining.sort((a, b) {
+                              final da = dist(current, LatLng(a.lat, a.lng));
+                              final db = dist(current, LatLng(b.lat, b.lng));
+                              return da.compareTo(db);
+                            });
+                            final next = remaining.removeAt(0);
+                            visitOrder.add(next);
+                            current = LatLng(next.lat, next.lng);
+                          }
+
+                          final waypoints = <LatLng>[start];
+                          waypoints.addAll(
+                            visitOrder.map((p) => LatLng(p.lat, p.lng)),
+                          );
+
+                          final route = await RouteService()
+                              .getWalkingRouteFromWaypoints(waypoints);
+
+                          if (mounted) {
+                            Navigator.of(context).pop({
+                              'route': route,
+                              'places':
+                                  visitOrder
+                                      .map(
+                                        (p) => {
+                                          'id': p.id,
+                                          'name': p.name,
+                                          'photoUrl': p.photoUrl ?? '',
+                                        },
+                                      )
+                                      .toList(),
+                            });
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Błąd tworzenia trasy: ${e.toString()}',
+                                ),
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _loading = false);
                         }
-                      } finally {
-                        if (mounted) setState(() => _loading = false);
-                      }
-                    },
-              icon: _loading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : const Icon(Icons.route),
+                      },
+              icon:
+                  _loading
+                      ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                      : const Icon(Icons.route),
               label: Text(_loading ? 'Tworzenie trasy...' : 'Stwórz trasę'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,

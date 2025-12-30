@@ -79,41 +79,46 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
         .collection('users')
         .doc(user.uid)
         .snapshots()
-        .listen((snap) {
-      try {
-        final data = snap.data() ?? <String, dynamic>{};
-        final visited = (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[];
-        if (mounted) {
-          setState(() {
-            _visitedPlaceIds
-              ..clear()
-              ..addAll(visited);
-            _error = null;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _visitedPlaceIds.clear();
-            _error = e.toString();
-          });
-        }
-      }
-    }, onError: (err) {
-      if (mounted) {
-        if (err is FirebaseException && err.code == 'permission-denied') {
-          setState(() {
-            _visitedPlaceIds.clear();
-            _error = null;
-          });
-        } else {
-          setState(() {
-            _visitedPlaceIds.clear();
-            _error = err?.toString() ?? 'Błąd subskrypcji użytkownika';
-          });
-        }
-      }
-    });
+        .listen(
+          (snap) {
+            try {
+              final data = snap.data() ?? <String, dynamic>{};
+              final visited =
+                  (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ??
+                  <String>[];
+              if (mounted) {
+                setState(() {
+                  _visitedPlaceIds
+                    ..clear()
+                    ..addAll(visited);
+                  _error = null;
+                });
+              }
+            } catch (e) {
+              if (mounted) {
+                setState(() {
+                  _visitedPlaceIds.clear();
+                  _error = e.toString();
+                });
+              }
+            }
+          },
+          onError: (err) {
+            if (mounted) {
+              if (err is FirebaseException && err.code == 'permission-denied') {
+                setState(() {
+                  _visitedPlaceIds.clear();
+                  _error = null;
+                });
+              } else {
+                setState(() {
+                  _visitedPlaceIds.clear();
+                  _error = err?.toString() ?? 'Błąd subskrypcji użytkownika';
+                });
+              }
+            }
+          },
+        );
   }
 
   @override
@@ -133,7 +138,9 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
 
   Future<void> _reportRouteCreationInBackground(String uid) async {
     try {
-      final unlockedAchievements = await _firestoreService.reportRouteCreation(uid);
+      final unlockedAchievements = await _firestoreService.reportRouteCreation(
+        uid,
+      );
       if (mounted && unlockedAchievements.isNotEmpty) {
         for (final ach in unlockedAchievements) {
           await AchievementUnlockedDialog.show(context, ach);
@@ -239,9 +246,11 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
     const double w = 40, h = 48;
     final bool isActive = place.id == _activePlaceId;
 
-    // Determine visit order index (if any)
     final int orderIdx = (widget.visitOrderIds?.indexOf(place.id) ?? -1);
-    final bool hasOrder = (widget.visitOrderIds != null && (widget.visitOrderIds!.length ?? 0) > 1 && orderIdx >= 0);
+    final bool hasOrder =
+        (widget.visitOrderIds != null &&
+            (widget.visitOrderIds!.length ?? 0) > 1 &&
+            orderIdx >= 0);
 
     return Marker(
       point: LatLng(place.lat, place.lng),
@@ -250,74 +259,83 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
       alignment: Alignment.topCenter,
       child: RepaintBoundary(
         child: Semantics(
-          label: 'Punkt ${place.name}${hasOrder ? ', numer ${orderIdx + 1}' : ''}${_visitedPlaceIds.contains(place.id) ? ', odwiedzony' : ''}',
+          label:
+              'Punkt ${place.name}${hasOrder ? ', numer ${orderIdx + 1}' : ''}${_visitedPlaceIds.contains(place.id) ? ', odwiedzony' : ''}',
           child: GestureDetector(
             onTap: () async {
               setState(() => _activePlaceId = place.id);
 
-              // animate to marker
               try {
                 widget.mapController.animateTo(
                   dest: LatLng(place.lat, place.lng),
                   zoom: widget.mapController.mapController.camera.zoom,
                 );
-              } catch (e) {
-                // ignore animation errors
-              }
+              } catch (e) {}
 
               await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => PlaceDetailsSheet(
-                  place: place,
-                  mapController: widget.mapController.mapController,
-                  onNavigate: (selectedPlace) async {
-                    try {
-                      await LocationService().ensureLocationEnabledAndPermitted();
-                      Position? last = await Geolocator.getLastKnownPosition();
-                      final userPos = last ??
-                          await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-                      final userLatLng = LatLng(
-                        userPos.latitude,
-                        userPos.longitude,
-                      );
-                      final routeResult = await _routeService.getWalkingRoute(
-                        userLatLng,
-                        LatLng(selectedPlace.lat, selectedPlace.lng),
-                      );
+                builder:
+                    (context) => PlaceDetailsSheet(
+                      place: place,
+                      mapController: widget.mapController.mapController,
+                      onNavigate: (selectedPlace) async {
+                        try {
+                          await LocationService()
+                              .ensureLocationEnabledAndPermitted();
+                          Position? last =
+                              await Geolocator.getLastKnownPosition();
+                          final userPos =
+                              last ??
+                              await Geolocator.getCurrentPosition(
+                                desiredAccuracy: LocationAccuracy.high,
+                              );
+                          final userLatLng = LatLng(
+                            userPos.latitude,
+                            userPos.longitude,
+                          );
+                          final routeResult = await _routeService
+                              .getWalkingRoute(
+                                userLatLng,
+                                LatLng(selectedPlace.lat, selectedPlace.lng),
+                              );
 
-                      widget.onRouteGenerated?.call(routeResult, selectedPlace);
+                          widget.onRouteGenerated?.call(
+                            routeResult,
+                            selectedPlace,
+                          );
 
-                      // Raportuj utworzenie trasy w tle
-                      final user = AuthService().currentUser;
-                      if (user != null) {
-                        _reportRouteCreationInBackground(user.uid);
-                      }
+                          final user = AuthService().currentUser;
+                          if (user != null) {
+                            _reportRouteCreationInBackground(user.uid);
+                          }
 
-                      if (routeResult.points.isNotEmpty) {
-                        widget.mapController.mapController.fitCamera(
-                          CameraFit.bounds(
-                            bounds: LatLngBounds.fromPoints(routeResult.points),
-                            padding: const EdgeInsets.all(40),
-                          ),
-                        );
-                      }
+                          if (routeResult.points.isNotEmpty) {
+                            widget.mapController.mapController.fitCamera(
+                              CameraFit.bounds(
+                                bounds: LatLngBounds.fromPoints(
+                                  routeResult.points,
+                                ),
+                                padding: const EdgeInsets.all(40),
+                              ),
+                            );
+                          }
 
-                      Navigator.of(context).pop();
-                    } catch (e) {
-                      toastification.show(
-                        context: context,
-                        title: Text('Błąd trasy: ${e.toString()}'),
-                        style: ToastificationStyle.flat,
-                        type: ToastificationType.error,
-                        autoCloseDuration: const Duration(seconds: 4),
-                        alignment: Alignment.bottomCenter,
-                        margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                      );
-                    }
-                  },
-                ),
+                          Navigator.of(context).pop();
+                        } catch (e) {
+                          toastification.show(
+                            context: context,
+                            title: Text('Błąd trasy: ${e.toString()}'),
+                            style: ToastificationStyle.flat,
+                            type: ToastificationType.error,
+                            autoCloseDuration: const Duration(seconds: 4),
+                            alignment: Alignment.bottomCenter,
+                            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                          );
+                        }
+                      },
+                    ),
               );
 
               setState(() => _activePlaceId = null);
@@ -335,7 +353,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                     fit: BoxFit.contain,
                   ),
 
-                  // visited badge (check)
                   if (_visitedPlaceIds.contains(place.id))
                     Positioned(
                       left: -2,
@@ -355,7 +372,6 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
                       ),
                     ),
 
-                  // numerical order badge (NumberBadge) — nicer wygląd
                   if (hasOrder)
                     Positioned(
                       right: -8,
@@ -392,15 +408,12 @@ class _PlacesMarkersWidgetState extends State<PlacesMarkersWidget> {
   }
 }
 
-/// A compact circular badge that displays a number.
-/// - Automatically adjusts size for 1 vs 2+ digits.
-/// - Has white border for contrast on varied marker images.
-/// - Changes background color when `isActive == true`.
 class NumberBadge extends StatelessWidget {
   final int number;
   final bool isActive;
 
-  const NumberBadge({Key? key, required this.number, this.isActive = false}) : super(key: key);
+  const NumberBadge({Key? key, required this.number, this.isActive = false})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -414,10 +427,7 @@ class NumberBadge extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: bg,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
       child: Text(
         '$number',
         style: TextStyle(

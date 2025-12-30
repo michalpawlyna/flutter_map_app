@@ -59,7 +59,8 @@ class Achievement {
   factory Achievement.fromMap(String id, Map<String, dynamic> data) {
     return Achievement(
       id: id,
-      criteria: (data['criteria'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+      criteria:
+          (data['criteria'] as Map<String, dynamic>?) ?? <String, dynamic>{},
       desc: data['desc'] as String? ?? '',
       key: data['key'] as String? ?? id,
       title: data['title'] as String? ?? '',
@@ -69,7 +70,9 @@ class Achievement {
     );
   }
 
-  factory Achievement.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snap) {
+  factory Achievement.fromSnapshot(
+    DocumentSnapshot<Map<String, dynamic>> snap,
+  ) {
     final data = snap.data() ?? <String, dynamic>{};
     return Achievement.fromMap(snap.id, data);
   }

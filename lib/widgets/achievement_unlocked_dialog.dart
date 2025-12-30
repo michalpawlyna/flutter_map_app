@@ -6,10 +6,12 @@ import '../models/achievement.dart';
 class AchievementUnlockedDialog extends StatefulWidget {
   final Achievement achievement;
 
-  const AchievementUnlockedDialog({Key? key, required this.achievement}) : super(key: key);
+  const AchievementUnlockedDialog({Key? key, required this.achievement})
+    : super(key: key);
 
   @override
-  State<AchievementUnlockedDialog> createState() => _AchievementUnlockedDialogState();
+  State<AchievementUnlockedDialog> createState() =>
+      _AchievementUnlockedDialogState();
 
   static Future<void> show(BuildContext context, Achievement achievement) {
     return showDialog(
@@ -55,19 +57,23 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Główna zawartość dialogu
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Odznaka
-                if (widget.achievement.photoUrl != null && widget.achievement.photoUrl!.isNotEmpty)
+                if (widget.achievement.photoUrl != null &&
+                    widget.achievement.photoUrl!.isNotEmpty)
                   ClipOval(
                     child: Image.network(
                       widget.achievement.photoUrl!,
                       width: 160,
                       height: 160,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.star, size: 120, color: Colors.amber),
+                      errorBuilder:
+                          (_, __, ___) => const Icon(
+                            Icons.star,
+                            size: 120,
+                            color: Colors.amber,
+                          ),
                     ),
                   )
                 else
@@ -90,10 +96,7 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
                 const SizedBox(height: 10),
                 Text(
                   'Udało ci się odblokować osiągnięcie "${widget.achievement.title}". Odkrywaj dalej i zdobądź je wszystkie!',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -120,7 +123,6 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
               ],
             ),
 
-            // Konfetti: górny wybuch (ze środka!)
             Positioned(
               top: -40,
               left: 0,
@@ -128,7 +130,7 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
               child: Align(
                 alignment: Alignment.topCenter,
                 child: SizedBox(
-                  width: 1, // punkt emisji - minimalna szerokość
+                  width: 1,
                   height: 120,
                   child: ConfettiWidget(
                     confettiController: _confettiController,
@@ -145,7 +147,6 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
               ),
             ),
 
-            // Konfetti: dolny strumień (w górę, ze środka!)
             Positioned(
               bottom: -20,
               left: 0,
@@ -153,7 +154,7 @@ class _AchievementUnlockedDialogState extends State<AchievementUnlockedDialog> {
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: SizedBox(
-                  width: 1, // punkt emisji - minimalna szerokość
+                  width: 1,
                   height: 80,
                   child: ConfettiWidget(
                     confettiController: _confettiController,

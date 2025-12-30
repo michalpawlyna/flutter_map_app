@@ -62,7 +62,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    // Optymistyczna aktualizacja UI
     final previousState = _isFavorited;
     setState(() => _isFavorited = !_isFavorited);
 
@@ -102,7 +101,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
         }
       }
     } catch (e) {
-      // W przypadku błędu przywróć poprzedni stan
       if (mounted) {
         setState(() => _isFavorited = previousState);
         toastification.show(
@@ -369,8 +367,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          // Visited badge: visible only for logged-in users and when the
-          // user's `visitedPlaces` contains this place id.
           if (_auth.currentUser != null)
             StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
               stream:
@@ -509,7 +505,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
     );
   }
 
-  // ignore: unused_element
   static Future<void> show(
     BuildContext context,
     Place place, {

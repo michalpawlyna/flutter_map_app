@@ -8,7 +8,6 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
 
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn signIn = GoogleSignIn.instance;
@@ -36,7 +35,7 @@ class AuthService {
       map.putIfAbsent('totalPlacesVisited', () => 0);
       map.putIfAbsent('achievementsSummary', () => <String, dynamic>{});
       map.putIfAbsent('achievementsUnlockedAt', () => <String, dynamic>{});
-  map.putIfAbsent('visitedPlaces', () => <String>[]);
+      map.putIfAbsent('visitedPlaces', () => <String>[]);
 
       await usersRef.set(map, SetOptions(merge: true));
     }
@@ -116,7 +115,7 @@ class AuthService {
         map.putIfAbsent('totalPlacesVisited', () => 0);
         map.putIfAbsent('achievementsSummary', () => <String, dynamic>{});
         map.putIfAbsent('achievementsUnlockedAt', () => <String, dynamic>{});
-  map.putIfAbsent('visitedPlaces', () => <String>[]);
+        map.putIfAbsent('visitedPlaces', () => <String>[]);
 
         await usersRef.set(map, SetOptions(merge: true));
       } else {
@@ -169,9 +168,7 @@ class AuthService {
         throw Exception('Profil użytkownika nie istnieje.');
       }
 
-      final currentUsername =
-          (userSnap.data())?['username'] as String? ??
-          '';
+      final currentUsername = (userSnap.data())?['username'] as String? ?? '';
 
       if (currentUsername == username) return;
 

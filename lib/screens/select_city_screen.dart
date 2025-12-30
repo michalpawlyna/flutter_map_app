@@ -52,25 +52,19 @@ class _CitiesListState extends State<_CitiesList> {
   }
 
   Future<void> _loadData() async {
-    final results = await Future.wait([
-      _fs.getCities(),
-      _fs.getAllPlaces(),
-    ]);
+    final results = await Future.wait([_fs.getCities(), _fs.getAllPlaces()]);
 
     final cities = results[0] as List<City>;
     final places = results[1] as List<dynamic>;
 
     final Map<String, int> counts = {};
     for (final p in places) {
-
       try {
         final cityId = (p as dynamic).cityId as String?;
         if (cityId != null) {
           counts[cityId] = (counts[cityId] ?? 0) + 1;
         }
-      } catch (_) {
-
-      }
+      } catch (_) {}
     }
 
     setState(() {
@@ -92,10 +86,7 @@ class _CitiesListState extends State<_CitiesList> {
   Future<void> _onCityTap(String cityId, String cityName) async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SelectPlacesScreen(
-          cityId: cityId,
-          cityName: cityName,
-        ),
+        builder: (_) => SelectPlacesScreen(cityId: cityId, cityName: cityName),
       ),
     );
 
@@ -137,7 +128,7 @@ class _CitiesListState extends State<_CitiesList> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.black12, width: 1),
-                  color: Colors.white,  
+                  color: Colors.white,
                 ),
                 child: Row(
                   children: [

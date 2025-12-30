@@ -81,14 +81,17 @@ class _MapScreenState extends State<MapScreen>
       setState(() {
         _currentRoute = result['route'] as RouteResult;
         final places = result['places'] as List<dynamic>?;
-        _visitOrderIds = places?.map((e) => e['id'] as String? ?? '').where((s) => s.isNotEmpty).toList();
+        _visitOrderIds =
+            places
+                ?.map((e) => e['id'] as String? ?? '')
+                .where((s) => s.isNotEmpty)
+                .toList();
       });
 
       if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
         _fitRouteWithPadding();
       }
 
-      // Raportuj utworzenie trasy w tle (bez czekania)
       _reportRouteCreationInBackground();
     }
     widget.routeResultNotifier?.value = null;
@@ -99,7 +102,9 @@ class _MapScreenState extends State<MapScreen>
       final user = AuthService().currentUser;
       if (user == null || !mounted) return;
 
-      final unlockedAchievements = await _firestoreService.reportRouteCreation(user.uid);
+      final unlockedAchievements = await _firestoreService.reportRouteCreation(
+        user.uid,
+      );
       if (mounted && unlockedAchievements.isNotEmpty) {
         for (final ach in unlockedAchievements) {
           await AchievementUnlockedDialog.show(context, ach);
@@ -132,7 +137,8 @@ class _MapScreenState extends State<MapScreen>
       Position? initialPos = await Geolocator.getLastKnownPosition();
       if (initialPos == null) {
         initialPos = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+          desiredAccuracy: LocationAccuracy.high,
+        );
       }
       _initialCenter = LatLng(initialPos.latitude, initialPos.longitude);
       debugPrint('[MapScreen] initial center set to $_initialCenter');
@@ -156,7 +162,10 @@ class _MapScreenState extends State<MapScreen>
         final user = AuthService().currentUser;
         if (user != null) {
           try {
-            final res = await _firestoreService.reportPlaceVisit(uid: user.uid, place: place);
+            final res = await _firestoreService.reportPlaceVisit(
+              uid: user.uid,
+              place: place,
+            );
             if (res.unlockedAchievements.isNotEmpty) {
               for (final ach in res.unlockedAchievements) {
                 await showDialog(
@@ -178,7 +187,6 @@ class _MapScreenState extends State<MapScreen>
             );
           }
         }
-
       },
     );
 
@@ -208,14 +216,13 @@ class _MapScreenState extends State<MapScreen>
   void _fitRouteWithPadding() {
     if (_currentRoute == null || _currentRoute!.points.isEmpty) return;
 
-    // Czekaj na render RouteInfoWidget
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final RenderBox? routeInfoRender = _routeInfoKey.currentContext?.findRenderObject() as RenderBox?;
+      final RenderBox? routeInfoRender =
+          _routeInfoKey.currentContext?.findRenderObject() as RenderBox?;
 
-      double bottomPadding = 40; // domyślny padding
+      double bottomPadding = 40;
 
       if (routeInfoRender != null) {
-        // Oblicz wysokość RouteInfoWidget
         bottomPadding = routeInfoRender.size.height + 20;
       }
 
@@ -226,7 +233,7 @@ class _MapScreenState extends State<MapScreen>
             top: 60,
             left: 60,
             right: 60,
-            bottom: bottomPadding, // dynamiczny padding u dołu
+            bottom: bottomPadding,
           ),
         ),
       );
@@ -297,9 +304,7 @@ class _MapScreenState extends State<MapScreen>
                     retinaMode: RetinaMode.isHighDensity(context),
                   ),
                   if (_currentRoute != null)
-                    RoutePolylineWidget(
-                      points: _currentRoute!.points,
-                    ),
+                    RoutePolylineWidget(points: _currentRoute!.points),
                   PlacesMarkersWidget(
                     mapController: _animatedMapController,
                     visitOrderIds: _visitOrderIds,

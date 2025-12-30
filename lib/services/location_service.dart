@@ -31,10 +31,13 @@ class LocationService {
   LocationService() {
     _serviceStatusSub = Geolocator.getServiceStatusStream().listen((status) {
       if (status == ServiceStatus.disabled) {
-        _controller.addError(LocationServiceException(
-            'service_disabled', 'Location services disabled.'));
+        _controller.addError(
+          LocationServiceException(
+            'service_disabled',
+            'Location services disabled.',
+          ),
+        );
       } else {
-
         if (_mode != LocationMode.idle) {
           _restartGeoSubWithMode(_mode);
         }
@@ -51,8 +54,10 @@ class LocationService {
   Future<bool> ensureLocationEnabledAndPermitted() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw LocationServiceException('service_disabled',
-          'Location services are disabled. Please enable them in system settings.');
+      throw LocationServiceException(
+        'service_disabled',
+        'Location services are disabled. Please enable them in system settings.',
+      );
     }
 
     var permission = await Geolocator.checkPermission();
@@ -60,13 +65,17 @@ class LocationService {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         throw LocationServiceException(
-            'permission_denied', 'Location permission denied by user.');
+          'permission_denied',
+          'Location permission denied by user.',
+        );
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw LocationServiceException('permission_denied_forever',
-          'Location permissions permanently denied; open app settings.');
+      throw LocationServiceException(
+        'permission_denied_forever',
+        'Location permissions permanently denied; open app settings.',
+      );
     }
 
     return true;
@@ -82,7 +91,9 @@ class LocationService {
     }
   }
 
-  Future<void> startUpdates({LocationMode startMode = LocationMode.normal}) async {
+  Future<void> startUpdates({
+    LocationMode startMode = LocationMode.normal,
+  }) async {
     await ensureLocationEnabledAndPermitted();
     setMode(startMode);
   }
@@ -103,20 +114,20 @@ class LocationService {
 
     switch (mode) {
       case LocationMode.normal:
-        accuracy = LocationAccuracy.high; 
-        distanceFilter = 25; 
+        accuracy = LocationAccuracy.high;
+        distanceFilter = 25;
         androidInterval = const Duration(seconds: 10);
-        minEmitMs = 1000; 
+        minEmitMs = 1000;
         break;
       case LocationMode.tracking:
         accuracy = LocationAccuracy.bestForNavigation;
-        distanceFilter = 5; 
+        distanceFilter = 5;
         androidInterval = const Duration(seconds: 5);
-        minEmitMs = 500; 
+        minEmitMs = 500;
         break;
       case LocationMode.idle:
         accuracy = LocationAccuracy.low;
-        distanceFilter = 100; 
+        distanceFilter = 100;
         androidInterval = const Duration(seconds: 30);
         minEmitMs = 5000;
         break;
@@ -142,16 +153,22 @@ class LocationService {
 
     final effectiveSettings = androidSettings ?? locationSettings;
 
-    Geolocator.getLastKnownPosition().then((pos) {
-      if (pos != null) _tryEmit(pos);
-    }).catchError((_) {});
+    Geolocator.getLastKnownPosition()
+        .then((pos) {
+          if (pos != null) _tryEmit(pos);
+        })
+        .catchError((_) {});
 
-    _geoSub = Geolocator.getPositionStream(locationSettings: effectiveSettings)
-        .listen((pos) {
-      _tryEmit(pos);
-    }, onError: (e) {
-      _controller.addError(e);
-    });
+    _geoSub = Geolocator.getPositionStream(
+      locationSettings: effectiveSettings,
+    ).listen(
+      (pos) {
+        _tryEmit(pos);
+      },
+      onError: (e) {
+        _controller.addError(e);
+      },
+    );
   }
 
   void _tryEmit(Position pos) {

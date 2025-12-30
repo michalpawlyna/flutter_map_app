@@ -44,7 +44,8 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
   @override
   void didUpdateWidget(covariant RouteInfoWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.route != oldWidget.route || widget.destinationName != oldWidget.destinationName) {
+    if (widget.route != oldWidget.route ||
+        widget.destinationName != oldWidget.destinationName) {
       _loadMode();
     }
   }
@@ -88,7 +89,10 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
           pos.longitude,
         );
         setState(() {
-          _traveledMeters = (_traveledMeters + delta).clamp(0.0, widget.route!.distanceMeters);
+          _traveledMeters = (_traveledMeters + delta).clamp(
+            0.0,
+            widget.route!.distanceMeters,
+          );
         });
       }
       _lastPosition = pos;
@@ -113,7 +117,9 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
       _isPaused = !_isPaused;
     });
     try {
-      widget.locationService.setMode(_isPaused ? LocationMode.normal : LocationMode.tracking);
+      widget.locationService.setMode(
+        _isPaused ? LocationMode.normal : LocationMode.tracking,
+      );
     } catch (_) {}
   }
 
@@ -141,12 +147,17 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final km = meters / 1000.0;
-      final entry = '${DateTime.now().toIso8601String()}|${km.toStringAsFixed(2)}';
-      final List<String> list = prefs.getStringList('route_history') ?? <String>[];
+      final entry =
+          '${DateTime.now().toIso8601String()}|${km.toStringAsFixed(2)}';
+      final List<String> list =
+          prefs.getStringList('route_history') ?? <String>[];
       list.insert(0, entry);
       await prefs.setStringList('route_history', list);
       final prev = prefs.getDouble('total_km') ?? 0.0;
-      await prefs.setDouble('total_km', (prev + double.parse(km.toStringAsFixed(2))));
+      await prefs.setDouble(
+        'total_km',
+        (prev + double.parse(km.toStringAsFixed(2))),
+      );
     } catch (_) {}
   }
 
@@ -204,14 +215,16 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               ),
             ],
           ),
-          child: _isNavigating ? _buildNavigatingView(context) : _buildPreStartView(context),
+          child:
+              _isNavigating
+                  ? _buildNavigatingView(context)
+                  : _buildPreStartView(context),
         ),
       ),
     );
   }
 
   Widget _buildPreStartView(BuildContext context) {
-    // pre-start: show expected time (big), route distance (smaller), transport icon on right and Start button
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -221,7 +234,6 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // big expected time
                   Text(
                     _formatDuration(widget.route!.durationSeconds),
                     style: const TextStyle(
@@ -244,22 +256,20 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               ),
             ),
 
-            // transport icon circle on right
             Container(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(12),
-               
               ),
               child: Center(
                 child: Icon(
                   _mode == TransportMode.car
                       ? Icons.directions_car
                       : _mode == TransportMode.bike
-                          ? Icons.pedal_bike
-                          : Icons.directions_walk,
+                      ? Icons.pedal_bike
+                      : Icons.directions_walk,
                   color: Colors.black,
                   size: 22,
                 ),
@@ -270,7 +280,6 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
 
         const SizedBox(height: 12),
 
-        // Start button (kept logic as before)
         Row(
           children: [
             Expanded(
@@ -279,12 +288,17 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
                 icon: const Icon(Icons.navigation, size: 20),
                 label: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Text('Start', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Start',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -295,7 +309,6 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
   }
 
   Widget _buildNavigatingView(BuildContext context) {
-    // navigating: show elapsed time (left), traveled distance (right), and buttons (Zakończ left, Pauza/Wznów right)
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -305,12 +318,14 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('CZAS TRWANIA',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w600,
-                      )),
+                  Text(
+                    'CZAS TRWANIA',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     _formatElapsedShort(_elapsedSeconds),
@@ -327,12 +342,14 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('PRZEBYTY DYSTANS',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w600,
-                      )),
+                  Text(
+                    'PRZEBYTY DYSTANS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     '${_formatKm(_traveledMeters, decimals: 1)} km',
@@ -352,7 +369,6 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
 
         Row(
           children: [
-            // Zakończ (outlined, left)
             Expanded(
               child: OutlinedButton(
                 onPressed: _finishNavigation,
@@ -361,27 +377,39 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
                   foregroundColor: Colors.black,
                   backgroundColor: Colors.grey.shade200,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Zakończ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                child: const Text(
+                  'Zakończ',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                ),
               ),
             ),
 
             const SizedBox(width: 12),
 
-            // Pauza / Wznów (black, right)
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: _togglePause,
                 icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
                 label: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(_isPaused ? 'Wznów' : 'Pauza', style: const TextStyle(fontWeight: FontWeight.w600,fontSize: 16)),
+                  child: Text(
+                    _isPaused ? 'Wznów' : 'Pauza',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),

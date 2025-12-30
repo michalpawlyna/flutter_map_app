@@ -16,7 +16,8 @@ class ManageAchievementsScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ManageAchievementsScreen> createState() => _ManageAchievementsScreenState();
+  State<ManageAchievementsScreen> createState() =>
+      _ManageAchievementsScreenState();
 }
 
 class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
@@ -25,7 +26,6 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
   bool _isSaving = false;
 
   static const int _maxEquipped = 1;
-  // Limit equipped achievements to 1 (only one can be shown/selected)
 
   @override
   void initState() {
@@ -59,7 +59,10 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
     setState(() => _isSaving = true);
 
     try {
-      await _firestoreService.updateUserEquippedAchievements(widget.user.uid, _selectedAchievementIds);
+      await _firestoreService.updateUserEquippedAchievements(
+        widget.user.uid,
+        _selectedAchievementIds,
+      );
       if (mounted) {
         toastification.show(
           context: context,
@@ -89,12 +92,13 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unlockedAchievements = widget.allAchievements
-        .where((ach) => widget.user.achievementsSummary[ach.id] == true)
-        .toList();
+    final unlockedAchievements =
+        widget.allAchievements
+            .where((ach) => widget.user.achievementsSummary[ach.id] == true)
+            .toList();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_sharp),
@@ -103,10 +107,7 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
         ),
         title: const Text(
           'Zarządzaj odznakami',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -115,134 +116,177 @@ class _ManageAchievementsScreenState extends State<ManageAchievementsScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: _isSaving
-                ? const Center(
-                    child: SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+            child:
+                _isSaving
+                    ? const Center(
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                    : IconButton(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      onPressed: _saveChanges,
+                      tooltip: 'Zapisz',
                     ),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.check, color: Colors.green),
-                    onPressed: _saveChanges,
-                    tooltip: 'Zapisz',
-                  ),
           ),
         ],
       ),
-      body: unlockedAchievements.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Nie masz jeszcze żadnych odblokowanych osiągnięć.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            )
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.8,
-              ),
-              itemCount: unlockedAchievements.length,
-              itemBuilder: (context, index) {
-                final achievement = unlockedAchievements[index];
-                final isSelected = _selectedAchievementIds.contains(achievement.id);
-
-                return GestureDetector(
-                  onTap: () => _onAchievementTapped(achievement.id),
-                  child: Opacity(
-                    opacity: isSelected || _selectedAchievementIds.length < _maxEquipped
-                        ? 1.0
-                        : 0.5,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? Colors.black : Colors.grey.shade300,
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                )
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 1),
-                                )
-                              ],
+      body:
+          unlockedAchievements.isEmpty
+              ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (achievement.photoUrl != null)
-                                  Image.network(
-                                    achievement.photoUrl!,
-                                    height: 48,
-                                    width: 48,
-                                    errorBuilder: (_, __, ___) =>
-                                        const Icon(Icons.error, size: 48),
-                                  )
-                                else
-                                  const Icon(Icons.shield,
-                                      size: 48, color: Colors.grey),
-                                const SizedBox(height: 8),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: Text(
-                                    achievement.title,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nie masz jeszcze żadnych odblokowanych osiągnięć.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              : GridView.builder(
+                padding: const EdgeInsets.all(20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: unlockedAchievements.length,
+                itemBuilder: (context, index) {
+                  final achievement = unlockedAchievements[index];
+                  final isSelected = _selectedAchievementIds.contains(
+                    achievement.id,
+                  );
+
+                  return GestureDetector(
+                    onTap: () => _onAchievementTapped(achievement.id),
+                    child: Transform.scale(
+                      scale: isSelected ? 1.05 : 1.0,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color:
+                                isSelected
+                                    ? Colors.blue.shade600
+                                    : Colors.grey.shade200,
+                            width: isSelected ? 2.5 : 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  isSelected
+                                      ? Colors.blue.withOpacity(0.15)
+                                      : Colors.black.withOpacity(0.06),
+                              blurRadius: isSelected ? 12 : 6,
+                              offset:
+                                  isSelected
+                                      ? const Offset(0, 4)
+                                      : const Offset(0, 2),
                             ),
-                            if (isSelected)
-                              Positioned(
-                                top: 6,
-                                right: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.check_circle,
-                                      color: Colors.green, size: 20),
-                                ),
-                              ),
                           ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(19),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child:
+                                        achievement.photoUrl != null
+                                            ? Image.network(
+                                              achievement.photoUrl!,
+                                              height: 48,
+                                              width: 48,
+                                              errorBuilder:
+                                                  (_, __, ___) => const Icon(
+                                                    Icons.error,
+                                                    size: 48,
+                                                  ),
+                                            )
+                                            : Icon(
+                                              Icons.shield,
+                                              size: 48,
+                                              color: Colors.grey[400],
+                                            ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                    ),
+                                    child: Text(
+                                      achievement.title,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            isSelected
+                                                ? Colors.blue.shade700
+                                                : Colors.black87,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isSelected)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade600,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.blue.withOpacity(0.4),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
     );
   }
 }

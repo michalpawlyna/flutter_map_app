@@ -51,9 +51,8 @@ class RouteService {
   Future<TransportMode> _getSelectedTransportMode() async {
     final prefs = await SharedPreferences.getInstance();
     final val = prefs.getString(_prefsKeyTransport);
-  return TransportModeValues.fromStringValue(val);
+    return TransportModeValues.fromStringValue(val);
   }
-
 
   Future<RouteResult> getWalkingRoute(LatLng start, LatLng end) async {
     return getWalkingRouteFromWaypoints([start, end]);
@@ -78,35 +77,52 @@ class RouteService {
 
     final body = jsonEncode({'coordinates': coords});
 
-    debugPrint('[RouteService] Requesting route with ${waypoints.length} waypoints using $profile mode');
+    debugPrint(
+      '[RouteService] Requesting route with ${waypoints.length} waypoints using $profile mode',
+    );
 
-    // Retry logic - spróbuj maksymalnie 3 razy
     const maxRetries = 3;
     const retryDelay = Duration(seconds: 2);
-    
+
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        debugPrint('[RouteService] Attempt $attempt/$maxRetries to fetch route...');
-        
-        final response = await http.post(
-          url,
-          headers: {'Authorization': _apiKey, 'Content-Type': 'application/json'},
-          body: body,
-        ).timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException('Route request timeout after 30 seconds'),
+        debugPrint(
+          '[RouteService] Attempt $attempt/$maxRetries to fetch route...',
         );
+
+        final response = await http
+            .post(
+              url,
+              headers: {
+                'Authorization': _apiKey,
+                'Content-Type': 'application/json',
+              },
+              body: body,
+            )
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout:
+                  () =>
+                      throw TimeoutException(
+                        'Route request timeout after 30 seconds',
+                      ),
+            );
 
         debugPrint('[RouteService] Response status: ${response.statusCode}');
 
         if (response.statusCode == 200) {
           debugPrint('[RouteService] Route fetched successfully');
           return _parseRouteResponse(response.body);
-        } else if (response.statusCode == 502 || response.statusCode == 503 || response.statusCode == 504) {
-          // Server error - spróbuj ponownie
-          debugPrint('[RouteService] Server error ${response.statusCode}. Response: ${response.body}');
+        } else if (response.statusCode == 502 ||
+            response.statusCode == 503 ||
+            response.statusCode == 504) {
+          debugPrint(
+            '[RouteService] Server error ${response.statusCode}. Response: ${response.body}',
+          );
           if (attempt < maxRetries) {
-            debugPrint('[RouteService] Retrying after ${retryDelay.inSeconds * attempt}s...');
+            debugPrint(
+              '[RouteService] Retrying after ${retryDelay.inSeconds * attempt}s...',
+            );
             await Future.delayed(retryDelay * attempt);
             continue;
           } else {
@@ -116,15 +132,23 @@ class RouteService {
           }
         } else if (response.statusCode == 401 || response.statusCode == 403) {
           debugPrint('[RouteService] Authentication error: ${response.body}');
-          throw Exception('OpenRouteService API key is invalid or expired. Please check your configuration.');
+          throw Exception(
+            'OpenRouteService API key is invalid or expired. Please check your configuration.',
+          );
         } else if (response.statusCode == 429) {
           debugPrint('[RouteService] Rate limit exceeded: ${response.body}');
-          throw Exception('Too many requests to OpenRouteService. Please wait a moment and try again.');
+          throw Exception(
+            'Too many requests to OpenRouteService. Please wait a moment and try again.',
+          );
         } else if (response.statusCode == 400) {
           debugPrint('[RouteService] Bad request: ${response.body}');
-          throw Exception('Invalid route parameters. The selected waypoints might be too far apart or inaccessible.');
+          throw Exception(
+            'Invalid route parameters. The selected waypoints might be too far apart or inaccessible.',
+          );
         } else {
-          debugPrint('[RouteService] Unexpected error: ${response.statusCode} - ${response.body}');
+          debugPrint(
+            '[RouteService] Unexpected error: ${response.statusCode} - ${response.body}',
+          );
           throw Exception(
             'Failed to fetch route: ${response.statusCode} ${response.reasonPhrase}',
           );
@@ -136,7 +160,9 @@ class RouteService {
           await Future.delayed(retryDelay * attempt);
           continue;
         } else {
-          throw Exception('Route request timed out after 30 seconds. Please check your internet connection and try again.');
+          throw Exception(
+            'Route request timed out after 30 seconds. Please check your internet connection and try again.',
+          );
         }
       } catch (e) {
         debugPrint('[RouteService] Error on attempt $attempt: $e');

@@ -53,9 +53,7 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
           final data = doc.data() as Map<String, dynamic>;
           res.add(Place.fromMap(doc.id, data));
         }
-      } catch (_) {
-
-      }
+      } catch (_) {}
     }
 
     return res;
@@ -89,185 +87,228 @@ class _FavouritePlacesScreenState extends State<FavouritePlacesScreen> {
             elevation: 0,
           ),
           backgroundColor: Colors.white,
-          body: Builder(builder: (context) {
-            if (user == null) {
-
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.person_off, size: 72, color: Colors.grey),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Nie jesteś zalogowany',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Aby zobaczyć ulubione miejsca, zaloguj się.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: Colors.black54),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+          body: Builder(
+            builder: (context) {
+              if (user == null) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.person_off,
+                          size: 72,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Nie jesteś zalogowany',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
-                          child: const Text('Zaloguj się'),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Aby zobaczyć ulubione miejsca, zaloguj się.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Zaloguj się'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final userDocStream =
+                  FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .snapshots();
+
+              return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: userDocStream,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snap.hasError) {
+                    return Center(child: Text('Błąd: ${snap.error}'));
+                  }
+
+                  final data = snap.data?.data() ?? <String, dynamic>{};
+                  final favs =
+                      (data['favouritePlaces'] as List<dynamic>?)
+                          ?.cast<String>() ??
+                      <String>[];
+
+                  if (favs.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.favorite_border,
+                              size: 72,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Brak ulubionych miejsc',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Nie dodałeś jeszcze żadnego miejsca do ulubionych.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-
-            final userDocStream = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
-
-            return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: userDocStream,
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snap.hasError) {
-                  return Center(child: Text('Błąd: ${snap.error}'));
-                }
-
-                final data = snap.data?.data() ?? <String, dynamic>{};
-                final favs = (data['favouritePlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[];
-
-                if (favs.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.favorite_border, size: 72, color: Colors.grey),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Brak ulubionych miejsc',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Nie dodałeś jeszcze żadnego miejsca do ulubionych.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 14, color: Colors.black54),
-                          ),
-                          
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-
-                return FutureBuilder<List<Place>>(
-                  future: _fetchPlacesByIds(favs),
-                  builder: (context, placesSnap) {
-                    if (placesSnap.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (placesSnap.hasError) {
-                      return Center(child: Text('Błąd: ${placesSnap.error}'));
-                    }
-
-                    final places = placesSnap.data ?? <Place>[];
-                    if (places.isEmpty) {
-                      return const Center(child: Text('Brak miejsc do wyświetlenia'));
-                    }
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: places.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final p = places[index];
-                        final photoUrl = p.photoUrl ?? '';
-                        final thumb = transformedCloudinaryUrl(photoUrl, width: 360);
-
-                        return InkWell(
-                          onTap: () {
-
-                          },
-                          borderRadius: BorderRadius.circular(4),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black12, width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    cacheManager: _cacheManager,
-                                    imageUrl: thumb.isEmpty ? '' : thumb,
-                                    width: 64,
-                                    height: 64,
-                                    fit: BoxFit.cover,
-                                    placeholder: (c, s) => Container(
-                                      width: 84,
-                                      height: 84,
-                                      color: Colors.grey.shade200,
-                                    ),
-                                    errorWidget: (c, s, e) => Container(
-                                      width: 84,
-                                      height: 84,
-                                      color: Colors.grey.shade200,
-                                      child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.name,
-                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        p.address,
-                                        style: const TextStyle(fontSize: 13, color: Colors.black54),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
                     );
-                  },
-                );
-              },
-            );
-          }),
+                  }
+
+                  return FutureBuilder<List<Place>>(
+                    future: _fetchPlacesByIds(favs),
+                    builder: (context, placesSnap) {
+                      if (placesSnap.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (placesSnap.hasError) {
+                        return Center(child: Text('Błąd: ${placesSnap.error}'));
+                      }
+
+                      final places = placesSnap.data ?? <Place>[];
+                      if (places.isEmpty) {
+                        return const Center(
+                          child: Text('Brak miejsc do wyświetlenia'),
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.all(20),
+                        itemCount: places.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final p = places[index];
+                          final photoUrl = p.photoUrl ?? '';
+                          final thumb = transformedCloudinaryUrl(
+                            photoUrl,
+                            width: 360,
+                          );
+
+                          return InkWell(
+                            onTap: () {},
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.black12,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: CachedNetworkImage(
+                                      cacheManager: _cacheManager,
+                                      imageUrl: thumb.isEmpty ? '' : thumb,
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.cover,
+                                      placeholder:
+                                          (c, s) => Container(
+                                            width: 84,
+                                            height: 84,
+                                            color: Colors.grey.shade200,
+                                          ),
+                                      errorWidget:
+                                          (c, s, e) => Container(
+                                            width: 84,
+                                            height: 84,
+                                            color: Colors.grey.shade200,
+                                            child: const Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          p.name,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          p.address,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );

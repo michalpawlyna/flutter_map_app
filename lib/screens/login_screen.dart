@@ -1,4 +1,3 @@
-// login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
@@ -21,22 +20,19 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isRegisterMode = false;
   bool _loading = false;
 
-  // controllers to support clear buttons and syncing text
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
 
-  // password visibility
   bool _passwordVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController(text: _email)
-      ..addListener(() {
-        setState(() {
-          _email = _emailController.text;
-        });
+    _emailController = TextEditingController(text: _email)..addListener(() {
+      setState(() {
+        _email = _emailController.text;
       });
+    });
     _passwordController = TextEditingController(text: _password)
       ..addListener(() {
         setState(() {
@@ -76,7 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
-          
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: Padding(
@@ -104,11 +99,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 160,
                   height: 160,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.image_not_supported,
-                    size: 96,
-                    color: Colors.grey,
-                  ),
+                  errorBuilder:
+                      (_, __, ___) => const Icon(
+                        Icons.image_not_supported,
+                        size: 96,
+                        color: Colors.grey,
+                      ),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -116,9 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Email field — Outlined TextFormField with black border
           TextFormField(
-            
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
@@ -128,7 +122,10 @@ class _LoginScreenState extends State<LoginScreen> {
               fillColor: Colors.white,
               labelText: 'E-mail',
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 18,
+              ),
               border: const OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.black12),
               ),
@@ -139,15 +136,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderSide: BorderSide(color: Colors.black, width: 2),
               ),
               floatingLabelStyle: const TextStyle(color: Colors.black),
-              suffixIcon: _emailController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () => _emailController.clear(),
-                      tooltip: 'Wyczyść',
-                      splashRadius: 18,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    )
-                  : null,
+              suffixIcon:
+                  _emailController.text.isNotEmpty
+                      ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _emailController.clear(),
+                        tooltip: 'Wyczyść',
+                        splashRadius: 18,
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+                      )
+                      : null,
             ),
             validator: (val) {
               final v = val?.trim();
@@ -160,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
           const SizedBox(height: 16),
 
-          // Password field — Outlined TextFormField with visibility toggle and black border
           TextFormField(
             controller: _passwordController,
             obscureText: !_passwordVisible,
@@ -171,7 +171,10 @@ class _LoginScreenState extends State<LoginScreen> {
               fillColor: Colors.white,
               labelText: 'Hasło',
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 18,
+              ),
               border: const OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.black12),
               ),
@@ -191,14 +194,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => _passwordController.clear(),
                       tooltip: 'Wyczyść',
                       splashRadius: 18,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      constraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
                     ),
                   IconButton(
-                    icon: Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
+                    icon: Icon(
+                      _passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () => _passwordVisible = !_passwordVisible,
+                        ),
                     tooltip: _passwordVisible ? 'Ukryj' : 'Pokaż',
                     splashRadius: 18,
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                   ),
                 ],
               ),
@@ -229,16 +245,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
+              child:
+                  _loading
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                      : Text(
+                        _isRegisterMode ? 'Zarejestruj się' : 'Zaloguj się',
                       ),
-                    )
-                  : Text(_isRegisterMode ? 'Zarejestruj się' : 'Zaloguj się'),
             ),
           ),
 

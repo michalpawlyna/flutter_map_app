@@ -44,21 +44,29 @@ class AppUser {
       displayName: data['displayName'] as String? ?? '',
       photoURL: data['photoURL'] as String? ?? data['photoUrl'] as String?,
       favouritePlaces:
-          (data['favouritePlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[],
+          (data['favouritePlaces'] as List<dynamic>?)?.cast<String>() ??
+          <String>[],
       role: data['role'] as String?,
       createdAt: data['createdAt'] as Timestamp?,
-    totalPlacesVisited: (data['totalPlacesVisited'] as num?)?.toInt() ?? 0,
-    totalPlacesLiked: (data['totalPlacesLiked'] as num?)?.toInt() ?? 0,
-    totalRoutesCreated: (data['totalRoutesCreated'] as num?)?.toInt() ?? 0,
-    achievementsSummary: ((data['achievementsSummary'] as Map<String, dynamic>?)
-        ?.map((k, v) => MapEntry(k, v as bool))) ??
-      <String, bool>{},
-    achievementsUnlockedAt:
-      ((data['achievementsUnlockedAt'] as Map<String, dynamic>?)
-          ?.map((k, v) => MapEntry(k, v as Timestamp?))) ??
-        <String, Timestamp?>{},
-    visitedPlaces: (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ?? <String>[],
-    equippedAchievements: (data['equippedAchievements'] as List<dynamic>?)?.cast<String>() ?? <String>[],
+      totalPlacesVisited: (data['totalPlacesVisited'] as num?)?.toInt() ?? 0,
+      totalPlacesLiked: (data['totalPlacesLiked'] as num?)?.toInt() ?? 0,
+      totalRoutesCreated: (data['totalRoutesCreated'] as num?)?.toInt() ?? 0,
+      achievementsSummary:
+          ((data['achievementsSummary'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, v as bool),
+          )) ??
+          <String, bool>{},
+      achievementsUnlockedAt:
+          ((data['achievementsUnlockedAt'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, v as Timestamp?),
+          )) ??
+          <String, Timestamp?>{},
+      visitedPlaces:
+          (data['visitedPlaces'] as List<dynamic>?)?.cast<String>() ??
+          <String>[],
+      equippedAchievements:
+          (data['equippedAchievements'] as List<dynamic>?)?.cast<String>() ??
+          <String>[],
     );
   }
 
@@ -66,7 +74,6 @@ class AppUser {
     final data = snap.data() ?? <String, dynamic>{};
     return AppUser.fromMap(snap.id, data);
   }
-
 
   Map<String, dynamic> toMap({bool includeServerTimestamp = false}) {
     final map = <String, dynamic>{
@@ -82,8 +89,8 @@ class AppUser {
       'totalRoutesCreated': totalRoutesCreated,
       'achievementsSummary': achievementsSummary,
       'achievementsUnlockedAt': achievementsUnlockedAt,
-  'visitedPlaces': visitedPlaces,
-  'equippedAchievements': equippedAchievements,
+      'visitedPlaces': visitedPlaces,
+      'equippedAchievements': equippedAchievements,
     };
 
     if (includeServerTimestamp) {
@@ -125,7 +132,8 @@ class AppUser {
       totalPlacesLiked: totalPlacesLiked ?? this.totalPlacesLiked,
       totalRoutesCreated: totalRoutesCreated ?? this.totalRoutesCreated,
       achievementsSummary: achievementsSummary ?? this.achievementsSummary,
-      achievementsUnlockedAt: achievementsUnlockedAt ?? this.achievementsUnlockedAt,
+      achievementsUnlockedAt:
+          achievementsUnlockedAt ?? this.achievementsUnlockedAt,
       visitedPlaces: visitedPlaces ?? this.visitedPlaces,
       equippedAchievements: equippedAchievements ?? this.equippedAchievements,
     );

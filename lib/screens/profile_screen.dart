@@ -1,13 +1,12 @@
-// profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/achievement.dart';
 import '../models/user.dart';
-import '../widgets/achievement_showcase_widget.dart';
 import 'package:toastification/toastification.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'manage_achievements_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -45,11 +44,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.initState();
     _achievementsFuture = _loadAchievements();
 
-    // controllers created once
     _displayNameController = TextEditingController();
     _usernameController = TextEditingController();
 
-    // attach listeners for UI updates
     _displayNameController.addListener(_onControllerChanged);
     _usernameController.addListener(_onControllerChanged);
 
@@ -66,7 +63,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _attachListeners() {
-    // ensure single attachment
     try {
       _displayNameController.removeListener(_onControllerChanged);
     } catch (_) {}
@@ -118,8 +114,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  
-
   bool get _hasChanges {
     final d = _displayNameController.text.trim();
     final u = _usernameController.text.trim();
@@ -133,7 +127,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     final newUsername = _usernameController.text.trim();
 
     final changes = <String, dynamic>{};
-    if (newDisplayName != _serverDisplayName) changes['displayName'] = newDisplayName;
+    if (newDisplayName != _serverDisplayName)
+      changes['displayName'] = newDisplayName;
     if (newUsername != _serverUsername) changes['username'] = newUsername;
 
     if (changes.isEmpty) return;
@@ -152,7 +147,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       } catch (_) {}
 
       setState(() {
-        if (changes.containsKey('displayName')) _serverDisplayName = newDisplayName;
+        if (changes.containsKey('displayName'))
+          _serverDisplayName = newDisplayName;
         if (changes.containsKey('username')) _serverUsername = newUsername;
       });
 
@@ -184,140 +180,129 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  /// Safely set controller text without triggering listener side-effects during build.
-  void _setControllerTextSafely(
-      TextEditingController controller, String text) {
+  void _setControllerTextSafely(TextEditingController controller, String text) {
     if (controller.text == text) return;
 
-    // temporarily remove our listener to avoid setState during build
     controller.removeListener(_onControllerChanged);
     try {
       controller.text = text;
-      // keep selection at end (optional)
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+
+      controller.selection = TextSelection.collapsed(
+        offset: controller.text.length,
+      );
     } finally {
       controller.addListener(_onControllerChanged);
     }
   }
 
   Future<void> _confirmAndDeleteAccount(User user) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (ctx) => Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch, // -> stretch so we can left-align the description
-          children: [
-            // Icon circle on top (centered)
-            Center(
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.delete,
-                  color: Colors.black,
-                  size: 28,
-                ),
-              ),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 12),
-            // Tytuł na środku
-            const Text(
-              'Usuń konto',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Opis wyrównany do lewej
-            const Text(
-              'Ta operacja jest nieodwracalna. Po usunięciu konta utracisz wszystkie swoje postępy, odznaki i zapisane dane.\n\nCzy na pewno chcesz usunąć konto?',
-              textAlign: TextAlign.left, // <- left aligned
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        shape: BoxShape.circle,
                       ),
-                      textStyle: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                      child: Icon(Icons.delete, color: Colors.black, size: 28),
                     ),
-                    child: const Text('Anuluj'),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                    ),
-                    child: const Text('Usuń konto'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
+                  const SizedBox(height: 12),
 
-  if (confirmed == true) {
-    await _deleteAccount(user);
+                  const Text(
+                    'Usuń konto',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    'Ta operacja jest nieodwracalna. Po usunięciu konta utracisz wszystkie swoje postępy, odznaki i zapisane dane.\n\nCzy na pewno chcesz usunąć konto?',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          child: const Text('Anuluj'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          child: const Text('Usuń konto'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    if (confirmed == true) {
+      await _deleteAccount(user);
+    }
   }
-}
-
-
-
-
 
   Future<void> _deleteAccount(User user) async {
     setState(() => _loading = true);
     final uid = user.uid;
 
     try {
-      // Try to delete auth user
       await user.delete();
 
-      // Delete firestore data (best-effort)
       try {
         await FirebaseFirestore.instance.collection('users').doc(uid).delete();
       } catch (e) {
@@ -350,7 +335,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             context: context,
             title: const Text('Wymagane ponowne zalogowanie'),
             description: const Text(
-                'Ze względów bezpieczeństwa, zaloguj się ponownie, aby usunąć konto.'),
+              'Ze względów bezpieczeństwa, zaloguj się ponownie, aby usunąć konto.',
+            ),
             style: ToastificationStyle.flat,
             type: ToastificationType.error,
             autoCloseDuration: const Duration(seconds: 6),
@@ -358,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
           );
         }
-        // Sign the user out so they can log in again.
+
         try {
           await _authService.signOut();
         } catch (_) {}
@@ -397,111 +383,128 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return StreamBuilder<User?>(stream: _authService.authStateChanges, builder: (context, authSnapshot) {
-      final user = authSnapshot.data ?? _authService.currentUser;
+    return StreamBuilder<User?>(
+      stream: _authService.authStateChanges,
+      builder: (context, authSnapshot) {
+        final user = authSnapshot.data ?? _authService.currentUser;
 
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_sharp),
-            onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
-            tooltip: 'Powrót',
-          ),
-          title: const Text(
-            'Mój profil',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_sharp),
+              onPressed:
+                  widget.onBack ?? () => Navigator.of(context).maybePop(),
+              tooltip: 'Powrót',
             ),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.black,
-          elevation: 0,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Builder(
-                builder: (ctx) {
-                  if (user == null) return const SizedBox.shrink();
-                  final uid = user.uid;
-                  if (_saving) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  }
-                  if (!_hasChanges) return const SizedBox.shrink();
-                  return IconButton(
-                    icon: const Icon(Icons.check, color: Colors.green),
-                    onPressed: () => _saveChanges(uid),
-                    tooltip: 'Zapisz zmiany',
-                  );
-                },
+            title: const Text(
+              'Mój profil',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        body: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: user == null ? _buildNotLoggedIn(context) : _buildProfileForUser(user),
-                  ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Builder(
+                  builder: (ctx) {
+                    if (user == null) return const SizedBox.shrink();
+                    final uid = user.uid;
+                    if (_saving) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+                    if (!_hasChanges) return const SizedBox.shrink();
+                    return IconButton(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      onPressed: () => _saveChanges(uid),
+                      tooltip: 'Zapisz zmiany',
+                    );
+                  },
                 ),
               ),
-              if (user != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: _loading ? null : () => _confirmAndDeleteAccount(user),
-                      style: TextButton.styleFrom(
-                        
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _loading
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Usuń konto',
-                                  style: TextStyle(fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.red,),
-                                ),
-                              ],
-                            ),
+            ],
+          ),
+          backgroundColor: Colors.white,
+          body: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child:
+                          user == null
+                              ? _buildNotLoggedIn(context)
+                              : _buildProfileForUser(user),
                     ),
                   ),
                 ),
-            ],
+                if (user != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed:
+                            _loading
+                                ? null
+                                : () => _confirmAndDeleteAccount(user),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child:
+                            _loading
+                                ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Usuń konto',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 
   Widget _buildNotLoggedIn(BuildContext context) {
@@ -515,10 +518,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           fit: BoxFit.contain,
           errorBuilder:
               (_, __, ___) => const Icon(
-            Icons.image_not_supported,
-            size: 96,
-            color: Colors.grey,
-          ),
+                Icons.image_not_supported,
+                size: 96,
+                color: Colors.grey,
+              ),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -536,7 +539,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
@@ -585,7 +590,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         final displayName = appUser?.displayName ?? '';
         final username = appUser?.username ?? '';
 
-        // Update controllers' text only when server value changed and field not focused
         if (_serverDisplayName != displayName) {
           _serverDisplayName = displayName;
           if (!_displayNameFocusNode.hasFocus) {
@@ -599,7 +603,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           }
         }
 
-        // ensure listeners attached
         _attachListeners();
 
         return Form(
@@ -614,19 +617,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                     CircleAvatar(
                       radius: 42,
                       backgroundColor: Colors.grey[200],
-                      backgroundImage: user.photoURL != null
-                          ? NetworkImage(user.photoURL!)
-                          : null,
-                      child: user.photoURL == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 44,
-                              color: Colors.black54,
-                            )
-                          : null,
+                      backgroundImage:
+                          user.photoURL != null
+                              ? NetworkImage(user.photoURL!)
+                              : null,
+                      child:
+                          user.photoURL == null
+                              ? const Icon(
+                                Icons.person,
+                                size: 44,
+                                color: Colors.black54,
+                              )
+                              : null,
                     ),
-                    // Show equipped achievement badge (bottom-right)
-                    if (appUser != null && appUser.equippedAchievements.isNotEmpty)
+
+                    if (appUser != null &&
+                        appUser.equippedAchievements.isNotEmpty)
                       FutureBuilder<List<Achievement>>(
                         future: _achievementsFuture,
                         builder: (ctx, achSnap) {
@@ -634,49 +640,153 @@ class _ProfileScreenState extends State<ProfileScreen>
                           final all = achSnap.data!;
                           final eid = appUser!.equippedAchievements.first;
                           final match = all.firstWhere(
-                              (a) => a.id == eid,
-                              orElse: () => Achievement(
+                            (a) => a.id == eid,
+                            orElse:
+                                () => Achievement(
                                   id: '',
                                   criteria: {},
                                   desc: '',
                                   key: '',
                                   title: '',
                                   photoUrl: null,
-                                  type: AchievementType.unknown));
+                                  type: AchievementType.unknown,
+                                ),
+                          );
                           if (match.id.isEmpty) return const SizedBox.shrink();
 
                           return Positioned(
                             bottom: 0,
-                            right: MediaQuery.of(context).size.width > 600 ? 0 : -2,
+                            right:
+                                MediaQuery.of(context).size.width > 600
+                                    ? 0
+                                    : -2,
                             child: Container(
                               width: 34,
                               height: 34,
                               child: ClipOval(
-                                child: match.photoUrl != null
-                                    ? Image.network(
-                                        match.photoUrl!,
-                                        fit: BoxFit.cover,
-                                        width: 34,
-                                        height: 34,
-                                        errorBuilder: (_, __, ___) => Icon(
+                                child:
+                                    match.photoUrl != null
+                                        ? Image.network(
+                                          match.photoUrl!,
+                                          fit: BoxFit.cover,
+                                          width: 34,
+                                          height: 34,
+                                          errorBuilder:
+                                              (_, __, ___) => Icon(
+                                                Icons.shield,
+                                                size: 18,
+                                                color: Colors.grey[700],
+                                              ),
+                                        )
+                                        : Icon(
                                           Icons.shield,
                                           size: 18,
                                           color: Colors.grey[700],
                                         ),
-                                      )
-                                    : Icon(
-                                        Icons.shield,
-                                        size: 18,
-                                        color: Colors.grey[700],
-                                      ),
                               ),
                             ),
                           );
                         },
                       ),
+
+                    if (appUser != null)
+                      FutureBuilder<List<Achievement>>(
+                        future: _achievementsFuture,
+                        builder: (ctx, achSnap) {
+                          if (!achSnap.hasData) return const SizedBox.shrink();
+                          final all = achSnap.data!;
+
+                          final hasEquipped =
+                              appUser!.equippedAchievements.isNotEmpty;
+
+                          Widget editIcon;
+                          if (hasEquipped) {
+                            editIcon = Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.black.withOpacity(0.08),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(18),
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder:
+                                              (_) => ManageAchievementsScreen(
+                                                user: appUser!,
+                                                allAchievements: all,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            editIcon = Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.black.withOpacity(0.08),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(18),
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder:
+                                              (_) => ManageAchievementsScreen(
+                                                user: appUser!,
+                                                allAchievements: all,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Icon(
+                                      Icons.push_pin,
+                                      size: 18,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          return editIcon;
+                        },
+                      ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 18),
 
               if (displayName.isNotEmpty || email.isNotEmpty)
@@ -707,24 +817,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                   ),
                 ),
-              if (appUser != null)
-                FutureBuilder<List<Achievement>>(
-                  future: _achievementsFuture,
-                  builder: (context, achievementSnapshot) {
-                    if (achievementSnapshot.hasData) {
-                      return AchievementShowcaseWidget(
-                        equippedAchievementIds: appUser!.equippedAchievements,
-                        allAchievements: achievementSnapshot.data!,
-                        user: appUser,
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-      
               const SizedBox(height: 24),
 
-              // Display Name field — Outlined TextFormField with black border
               TextFormField(
                 controller: _displayNameController,
                 focusNode: _displayNameFocusNode,
@@ -735,7 +829,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   fillColor: Colors.white,
                   labelText: 'Imię i nazwisko',
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 18,
+                  ),
                   border: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black12),
                   ),
@@ -746,15 +843,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                     borderSide: BorderSide(color: Colors.black, width: 2),
                   ),
                   floatingLabelStyle: const TextStyle(color: Colors.black),
-                  suffixIcon: _displayNameController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => _displayNameController.clear(),
-                          tooltip: 'Wyczyść',
-                          splashRadius: 18,
-                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                        )
-                      : null,
+                  suffixIcon:
+                      _displayNameController.text.isNotEmpty
+                          ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () => _displayNameController.clear(),
+                            tooltip: 'Wyczyść',
+                            splashRadius: 18,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                          )
+                          : null,
                 ),
                 validator: (val) {
                   final v = (val ?? '').trim();
@@ -764,10 +865,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 },
                 onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
               ),
-              
+
               const SizedBox(height: 24),
 
-              // Username field — Outlined TextFormField with black border
               TextFormField(
                 controller: _usernameController,
                 focusNode: _usernameFocusNode,
@@ -779,7 +879,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   fillColor: Colors.white,
                   labelText: 'Nazwa użytkownika',
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 18,
+                  ),
                   border: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.black12),
                   ),
@@ -790,15 +893,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                     borderSide: BorderSide(color: Colors.black, width: 2),
                   ),
                   floatingLabelStyle: const TextStyle(color: Colors.black),
-                  suffixIcon: _usernameController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => _usernameController.clear(),
-                          tooltip: 'Wyczyść',
-                          splashRadius: 18,
-                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                        )
-                      : null,
+                  suffixIcon:
+                      _usernameController.text.isNotEmpty
+                          ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () => _usernameController.clear(),
+                            tooltip: 'Wyczyść',
+                            splashRadius: 18,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                          )
+                          : null,
                 ),
                 validator: (val) {
                   final v = (val ?? '').trim().toLowerCase();

@@ -14,7 +14,8 @@ import 'widgets/app_drawer.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PaintingBinding.instance.imageCache.maximumSize = 100; // max 100 obrazów
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // ~50 MB
+  PaintingBinding.instance.imageCache.maximumSizeBytes =
+      50 * 1024 * 1024; // ~50 MB
 
   await Future.wait([
     dotenv.load(fileName: ".env"),
