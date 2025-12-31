@@ -23,6 +23,25 @@ class PlaceDetailsSheet extends StatefulWidget {
     this.onNavigate,
   }) : super(key: key);
 
+  static Future<void> show(
+    BuildContext context,
+    Place place, {
+    MapController? mapController,
+    Future<void> Function(Place)? onNavigate,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => PlaceDetailsSheet(
+            place: place,
+            mapController: mapController,
+            onNavigate: onNavigate,
+          ),
+    );
+  }
+
   @override
   State<PlaceDetailsSheet> createState() => _PlaceDetailsSheetState();
 }
@@ -502,25 +521,6 @@ class _PlaceDetailsSheetState extends State<PlaceDetailsSheet> {
           const SizedBox(height: 8),
         ],
       ),
-    );
-  }
-
-  static Future<void> show(
-    BuildContext context,
-    Place place, {
-    MapController? mapController,
-    Future<void> Function(Place)? onNavigate,
-  }) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (context) => PlaceDetailsSheet(
-            place: place,
-            mapController: mapController,
-            onNavigate: onNavigate,
-          ),
     );
   }
 }

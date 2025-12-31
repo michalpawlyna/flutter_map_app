@@ -26,7 +26,6 @@ class UserLocationWidget extends StatefulWidget {
 class _UserLocationWidgetState extends State<UserLocationWidget> {
   late final Stream<Position> _mergedStream;
   Position? _lastPosition;
-  Position? _smoothedPosition;
 
   @override
   void initState() {
@@ -83,7 +82,6 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
       final last = await Geolocator.getLastKnownPosition();
       if (last != null) {
         _lastPosition = last;
-        _smoothedPosition = last;
         yield last;
       }
 
@@ -92,7 +90,6 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
           desiredAccuracy: LocationAccuracy.low,
         );
         _lastPosition = current;
-        _smoothedPosition = current;
         yield current;
       } catch (_) {}
     } catch (_) {}
@@ -100,7 +97,6 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
     await for (final position in widget.positionStream) {
       if (_lastPosition == null) {
         _lastPosition = position;
-        _smoothedPosition = position;
         yield position;
         continue;
       }
@@ -110,7 +106,6 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
       if (distance >= widget.minMovementThreshold) {
         final smoothed = _smoothPosition(position, _lastPosition!);
         _lastPosition = position;
-        _smoothedPosition = smoothed;
         yield smoothed;
       }
     }
@@ -127,8 +122,6 @@ class _UserLocationWidgetState extends State<UserLocationWidget> {
 
         final position = snapshot.data!;
         final latLng = LatLng(position.latitude, position.longitude);
-        final accuracy = position.accuracy;
-        final radius = max(widget.minAccuracyRadius, accuracy);
 
         return MarkerLayer(
           markers: [

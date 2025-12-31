@@ -75,20 +75,33 @@ class _MainScaffoldState extends State<MainScaffold> {
       drawer: AppDrawer(
         scaffoldKey: _scaffoldKey,
         authService: _authService,
-        onSelect: (index) async {
-          if (index == -1) {
-            final result = await Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SelectCityScreen()));
+        onSelect: (payload) async {
+          if (payload is int) {
+            final index = payload;
+            if (index == -1) {
+              final result = await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SelectCityScreen()));
 
-            if (result is Map<String, dynamic> && result['route'] != null) {
-              _routeResultNotifier.value = result;
+              if (result is Map<String, dynamic> && result['route'] != null) {
+                _routeResultNotifier.value = result;
+                setState(() => _selectedIndex = 0);
+              }
+              return;
+            }
+
+            setState(() => _selectedIndex = index);
+            return;
+          }
+
+          if (payload is Map<String, dynamic>) {
+            // expect {'placeId': '...'} or other payloads
+            if (payload.containsKey('placeId') && payload['placeId'] is String) {
+              _routeResultNotifier.value = payload;
               setState(() => _selectedIndex = 0);
             }
             return;
           }
-
-          setState(() => _selectedIndex = index);
         },
       ),
       body: IndexedStack(index: _selectedIndex, children: _screens),

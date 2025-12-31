@@ -11,6 +11,7 @@ import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
 import '../widgets/places_markers_widget.dart';
 import '../models/place.dart';
+import '../widgets/place_details_sheet_widget.dart';
 import '../services/location_service.dart';
 import '../services/firestore_service.dart';
 import '../services/tts_service.dart';
@@ -26,12 +27,14 @@ import 'loading_screen.dart';
 
 class MapScreen extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final String? initialPlaceId;
   final ValueNotifier<Map<String, dynamic>?>? routeResultNotifier;
 
   const MapScreen({
     Key? key,
     required this.scaffoldKey,
     this.routeResultNotifier,
+    this.initialPlaceId,
   }) : super(key: key);
 
   @override
@@ -94,6 +97,77 @@ class _MapScreenState extends State<MapScreen>
 
       _reportRouteCreationInBackground();
     }
+    if (result['placeId'] is String) {
+      final pid = result['placeId'] as String;
+      Place? found;
+      try {
+        found = _places.firstWhere((p) => p.id == pid);
+      } catch (_) {
+        found = null;
+      }
+
+      if (found != null && mounted) {
+        try {
+          _animatedMapController.mapController.move(
+            LatLng(found.lat, found.lng),
+            15.0,
+          );
+        } catch (_) {}
+
+        try {
+          PlaceDetailsSheet.show(
+            context,
+            found,
+            mapController: _animatedMapController.mapController,
+            onNavigate: (selectedPlace) async {
+              try {
+                await _locationService.ensureLocationEnabledAndPermitted();
+                Position? last = await Geolocator.getLastKnownPosition();
+                final userPos =
+                    last ??
+                    await Geolocator.getCurrentPosition(
+                      desiredAccuracy: LocationAccuracy.high,
+                    );
+                final userLatLng = LatLng(userPos.latitude, userPos.longitude);
+
+                final routeResult = await RouteService().getWalkingRoute(
+                  userLatLng,
+                  LatLng(selectedPlace.lat, selectedPlace.lng),
+                );
+
+                if (!mounted) return;
+
+                setState(() {
+                  _currentRoute = routeResult;
+                  _destinationName = selectedPlace.name;
+                  _visitOrderIds = [selectedPlace.id];
+                });
+
+                if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
+                  _fitRouteWithPadding();
+                }
+
+                _reportRouteCreationInBackground();
+
+                Navigator.of(context).pop();
+              } catch (e) {
+                if (mounted) {
+                  toastification.show(
+                    context: context,
+                    title: Text('Błąd trasy: ${e.toString()}'),
+                    style: ToastificationStyle.flat,
+                    type: ToastificationType.error,
+                    autoCloseDuration: const Duration(seconds: 4),
+                    alignment: Alignment.bottomCenter,
+                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                  );
+                }
+              }
+            },
+          );
+        } catch (_) {}
+      }
+    }
     widget.routeResultNotifier?.value = null;
   }
 
@@ -118,6 +192,38 @@ class _MapScreenState extends State<MapScreen>
   Future<void> _initializeServicesAndLocationStream() async {
     try {
       await _location_service_ensureAndPrepare();
+      if (widget.initialPlaceId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            final id = widget.initialPlaceId!;
+            Place? found;
+            try {
+              found = _places.firstWhere((p) => p.id == id);
+            } catch (_) {
+              found = null;
+            }
+
+            if (found != null && mounted) {
+              final lat = found.lat ?? 0.0;
+              final lng = found.lng ?? 0.0;
+              try {
+                _animatedMapController.mapController.move(
+                  LatLng(lat, lng),
+                  15.0,
+                );
+              } catch (_) {}
+
+              try {
+                await PlaceDetailsSheet.show(
+                  context,
+                  found,
+                  mapController: _animatedMapController.mapController,
+                );
+              } catch (_) {}
+            }
+          } catch (_) {}
+        });
+      }
     } catch (e, st) {
       debugPrint("Błąd podczas inicjalizacji mapy: $e\n$st");
       rethrow;

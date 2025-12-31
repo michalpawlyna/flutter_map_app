@@ -8,10 +8,11 @@ import '../screens/settings_screen.dart';
 import '../screens/achievements_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/favourite_places_screen.dart';
+import '../screens/search_places_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   final AuthService authService;
-  final ValueChanged<int> onSelect;
+  final ValueChanged<dynamic> onSelect;
   final GlobalKey<ScaffoldState> scaffoldKey;
 
   const AppDrawer({
@@ -280,6 +281,22 @@ class AppDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       onSelect(0);
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.search_outlined,
+                    title: 'Wyszukaj miejsce',
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SearchPlacesScreen(),
+                        ),
+                      );
+
+                      if (result != null) {
+                        onSelect(result);
+                      }
                     },
                   ),
                   _DrawerItem(
