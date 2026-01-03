@@ -237,6 +237,108 @@ class RouteService {
     );
   }
 
+  List<int> optimizeWaypointsOrderWith2Opt(
+    LatLng start,
+    List<LatLng> pointsToVisit,
+  ) {
+    if (pointsToVisit.isEmpty) return [];
+    if (pointsToVisit.length == 1) return [0];
+
+    List<int> tour = _greedyNearestNeighbor(start, pointsToVisit);
+    
+    double bestDistance = _calculateTourDistance(start, pointsToVisit, tour);
+    bool improved = true;
+    int iterations = 0;
+    const maxIterations = 1000;
+
+    debugPrint('[RouteService] Starting 2-opt optimization with ${pointsToVisit.length} points');
+    debugPrint('[RouteService] Initial tour distance: ${bestDistance.toStringAsFixed(0)}m');
+
+    while (improved && iterations < maxIterations) {
+      improved = false;
+      iterations++;
+
+      for (int i = 0; i < tour.length - 1; i++) {
+        for (int j = i + 2; j < tour.length; j++) {
+          List<int> newTour = _swap2Opt(tour, i, j);
+          double newDistance = _calculateTourDistance(start, pointsToVisit, newTour);
+
+          if (newDistance < bestDistance) {
+            tour = newTour;
+            bestDistance = newDistance;
+            improved = true;
+
+            debugPrint(
+              '[RouteService] 2-opt improvement found at iteration $iterations: ${newDistance.toStringAsFixed(0)}m',
+            );
+            break;
+          }
+        }
+        if (improved) break;
+      }
+    }
+
+    debugPrint(
+      '[RouteService] 2-opt optimization completed after $iterations iterations. Final distance: ${bestDistance.toStringAsFixed(0)}m',
+    );
+    return tour;
+  }
+
+
+  List<int> _greedyNearestNeighbor(LatLng start, List<LatLng> points) {
+    final List<int> tour = [];
+    final Set<int> visited = {};
+    LatLng current = start;
+
+    while (visited.length < points.length) {
+      int nearest = -1;
+      double nearestDist = double.infinity;
+
+      for (int i = 0; i < points.length; i++) {
+        if (!visited.contains(i)) {
+          final dist = _haversineDistance(current, points[i]);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = i;
+          }
+        }
+      }
+
+      if (nearest >= 0) {
+        tour.add(nearest);
+        visited.add(nearest);
+        current = points[nearest];
+      }
+    }
+
+    return tour;
+  }
+
+  double _calculateTourDistance(
+    LatLng start,
+    List<LatLng> points,
+    List<int> tour,
+  ) {
+    double distance = 0;
+    LatLng current = start;
+
+    for (final idx in tour) {
+      distance += _haversineDistance(current, points[idx]);
+      current = points[idx];
+    }
+
+    return distance;
+  }
+
+  List<int> _swap2Opt(List<int> tour, int i, int j) {
+    final newTour = List<int>.from(tour);
+    final segment = newTour.sublist(i + 1, j + 1).reversed.toList();
+    for (int k = 0; k < segment.length; k++) {
+      newTour[i + 1 + k] = segment[k];
+    }
+    return newTour;
+  }
+
   double _haversineDistance(LatLng a, LatLng b) {
     const R = 6371000.0;
     final lat1 = _degToRad(a.latitude);

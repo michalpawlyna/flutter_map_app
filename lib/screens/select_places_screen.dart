@@ -409,30 +409,28 @@ class _PlacesListState extends State<_PlacesList> {
                           }
                           final start = LatLng(pos.latitude, pos.longitude);
 
-                          final List<Place> remaining = List.from(
-                            selectedPlaces,
-                          );
-                          final List<Place> visitOrder = [];
-                          LatLng current = start;
-                          final Distance dist = Distance();
+                          final pointsToVisit = selectedPlaces
+                              .map((p) => LatLng(p.lat, p.lng))
+                              .toList();
 
-                          while (remaining.isNotEmpty) {
-                            remaining.sort((a, b) {
-                              final da = dist(current, LatLng(a.lat, a.lng));
-                              final db = dist(current, LatLng(b.lat, b.lng));
-                              return da.compareTo(db);
-                            });
-                            final next = remaining.removeAt(0);
-                            visitOrder.add(next);
-                            current = LatLng(next.lat, next.lng);
-                          }
+                          final routeService = RouteService();
+                          final optimizedIndices =
+                              routeService.optimizeWaypointsOrderWith2Opt(
+                            start,
+                            pointsToVisit,
+                          );
+
+                          final List<Place> visitOrder =
+                              optimizedIndices
+                                  .map((idx) => selectedPlaces[idx])
+                                  .toList();
 
                           final waypoints = <LatLng>[start];
                           waypoints.addAll(
                             visitOrder.map((p) => LatLng(p.lat, p.lng)),
                           );
 
-                          final route = await RouteService()
+                          final route = await routeService
                               .getWalkingRouteFromWaypoints(waypoints);
 
                           if (mounted) {
