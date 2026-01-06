@@ -5,12 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/location_service.dart';
 import '../services/route_service.dart';
+import '../models/place.dart';
 
 class RouteInfoWidget extends StatefulWidget {
   final RouteResult? route;
   final VoidCallback onClear;
   final String? destinationName;
   final LocationService locationService;
+  final List<Place> visitedPlaces;
 
   const RouteInfoWidget({
     Key? key,
@@ -18,6 +20,7 @@ class RouteInfoWidget extends StatefulWidget {
     required this.onClear,
     required this.locationService,
     this.destinationName,
+    this.visitedPlaces = const [],
   }) : super(key: key);
 
   @override
@@ -252,6 +255,8 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  _buildDestinationInfo(),
                 ],
               ),
             ),
@@ -303,6 +308,56 @@ class _RouteInfoWidgetState extends State<RouteInfoWidget> {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDestinationInfo() {
+    if (widget.visitedPlaces.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final firstPlace = widget.visitedPlaces.first;
+    final remainingCount = widget.visitedPlaces.length - 1;
+
+    return Row(
+      children: [
+        Icon(
+          Icons.location_on,
+          size: 16,
+          color: Colors.grey.shade500,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  firstPlace.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (remainingCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: Text(
+                    '+$remainingCount więcej',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );

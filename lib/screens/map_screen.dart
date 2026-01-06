@@ -319,6 +319,23 @@ class _MapScreenState extends State<MapScreen>
   Future<List<Place>> _firestore_service_getAllPlaces() =>
       _firestoreService.getAllPlaces();
 
+  List<Place> _getVisitedPlaces() {
+    if (_visitOrderIds == null || _visitOrderIds!.isEmpty) {
+      return [];
+    }
+    
+    final visited = <Place>[];
+    for (final id in _visitOrderIds!) {
+      try {
+        final place = _places.firstWhere((p) => p.id == id);
+        visited.add(place);
+      } catch (_) {
+        // Place not found, skip
+      }
+    }
+    return visited;
+  }
+
   void _fitRouteWithPadding() {
     if (_currentRoute == null || _currentRoute!.points.isEmpty) return;
 
@@ -437,6 +454,7 @@ class _MapScreenState extends State<MapScreen>
                 route: _currentRoute,
                 destinationName: _destinationName,
                 locationService: _locationService,
+                visitedPlaces: _getVisitedPlaces(),
                 onClear: () {
                   setState(() {
                     _currentRoute = null;
