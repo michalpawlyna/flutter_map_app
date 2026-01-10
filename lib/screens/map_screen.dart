@@ -6,7 +6,10 @@ import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:toastification/toastification.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/map_style.dart';
+import '../services/map_style_notifier.dart';
 import '../widgets/user_location_widget.dart';
 import '../widgets/center_on_user_button_widget.dart';
 import '../widgets/places_markers_widget.dart';
@@ -58,13 +61,20 @@ class _MapScreenState extends State<MapScreen>
 
   ProximityService? _proximityService;
   StreamSubscription<Position>? _locSub;
+  StreamSubscription<Object?>? _mapStyleSub;
   List<Place> _places = [];
 
   RouteResult? _currentRoute;
   String? _destinationName;
   List<String>? _visitOrderIds;
 
+  MapStyle _currentMapStyle = MapStyle.lightAll;
+  final ValueNotifier<MapStyle> _mapStyleNotifier =
+      ValueNotifier(MapStyle.lightAll);
+
   final GlobalKey _routeInfoKey = GlobalKey();
+
+  final MapStyleNotifier _mapStyleService = MapStyleNotifier();
 
   @override
   void initState() {
@@ -74,6 +84,20 @@ class _MapScreenState extends State<MapScreen>
       debugPrint('[MapScreen] initialization future completed');
     });
     widget.routeResultNotifier?.addListener(_handleExternalRouteResult);
+    _mapStyleNotifier.addListener(_onMapStyleChanged);
+    _mapStyleService.notifier.addListener(_onGlobalMapStyleChanged);
+  }
+
+  void _onMapStyleChanged() {
+    setState(() {
+      _currentMapStyle = _mapStyleNotifier.value;
+    });
+  }
+
+  void _onGlobalMapStyleChanged() {
+    setState(() {
+      _currentMapStyle = _mapStyleService.notifier.value;
+    });
   }
 
   void _handleExternalRouteResult() {
@@ -239,6 +263,9 @@ class _MapScreenState extends State<MapScreen>
 
     await _initProximity(_positionStream);
 
+    // Load map style from SharedPreferences
+    await _loadMapStyle();
+
     try {
       Position? initialPos = await Geolocator.getLastKnownPosition();
       if (initialPos == null) {
@@ -250,6 +277,22 @@ class _MapScreenState extends State<MapScreen>
       debugPrint('[MapScreen] initial center set to $_initialCenter');
     } catch (e) {
       debugPrint('[MapScreen] could not get explicit initial position: $e');
+    }
+  }
+
+  Future<void> _loadMapStyle() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final styleValue = prefs.getString('map_style');
+      final style = MapStyleExtension.fromStringValue(styleValue);
+      setState(() {
+        _currentMapStyle = style;
+        _mapStyleNotifier.value = style;
+      });
+      // Update global notifier
+      _mapStyleService.setMapStyle(style);
+    } catch (e) {
+      debugPrint('[MapScreen] error loading map style: $e');
     }
   }
 
@@ -366,8 +409,11 @@ class _MapScreenState extends State<MapScreen>
   @override
   void dispose() {
     widget.routeResultNotifier?.removeListener(_handleExternalRouteResult);
+    _mapStyleNotifier.removeListener(_onMapStyleChanged);
+    _mapStyleService.notifier.removeListener(_onGlobalMapStyleChanged);
 
     _locSub?.cancel();
+    _mapStyleSub?.cancel();
     _proximityService = null;
 
     _locationService.dispose().catchError((e) {
@@ -421,8 +467,7 @@ class _MapScreenState extends State<MapScreen>
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png',
+                    urlTemplate: _currentMapStyle.urlTemplate,
                     subdomains: const ['a', 'b', 'c', 'd'],
                     retinaMode: RetinaMode.isHighDensity(context),
                   ),

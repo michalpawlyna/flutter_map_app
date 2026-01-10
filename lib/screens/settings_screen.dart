@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/map_style.dart';
+import '../services/map_style_notifier.dart';
+
 enum TransportMode { foot, bike, car }
 
 class SettingsScreen extends StatefulWidget {
@@ -12,13 +15,16 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   static const _prefsKeyTransport = 'transport_mode';
+  static const _prefsKeyMapStyle = 'map_style';
 
   TransportMode _mode = TransportMode.foot;
+  MapStyle _mapStyle = MapStyle.lightAll;
 
   @override
   void initState() {
     super.initState();
     _loadMode();
+    _loadMapStyle();
   }
 
   Future<void> _loadMode() async {
@@ -32,6 +38,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveMode(TransportMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKeyTransport, _stringOf(mode));
+  }
+
+  Future<void> _loadMapStyle() async {
+    final prefs = await SharedPreferences.getInstance();
+    final val = prefs.getString(_prefsKeyMapStyle);
+    setState(() {
+      _mapStyle = MapStyleExtension.fromStringValue(val);
+    });
+  }
+
+  Future<void> _saveMapStyle(MapStyle style) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKeyMapStyle, style.stringValue);
+    // Notify listeners globally
+    MapStyleNotifier().setMapStyle(style);
   }
 
   String _stringOf(TransportMode mode) {
@@ -199,7 +220,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
+
+            // Map Style Selection
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return PopupMenuButton<MapStyle>(
+                  position: PopupMenuPosition.under,
+                  constraints: BoxConstraints.tightFor(
+                    width: constraints.maxWidth,
+                  ),
+                  offset: const Offset(0, 4),
+                  color: Colors.white,
+                  surfaceTintColor: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  tooltip: 'Wybierz styl mapy',
+                  initialValue: _mapStyle,
+                  child: InputDecorator(
+                    decoration: _fieldDecoration(
+                      label: 'Styl mapy',
+                      suffix: const Icon(Icons.expand_more),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.map, color: Colors.black87),
+                        const SizedBox(width: 12),
+                        Text(
+                          _mapStyle.displayName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onSelected: (MapStyle style) async {
+                    await _saveMapStyle(style);
+                    setState(() => _mapStyle = style);
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return MapStyle.values.map((style) {
+                      return PopupMenuItem<MapStyle>(
+                        value: style,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.map, color: Colors.black87),
+                            const SizedBox(width: 12),
+                            Text(
+                              style.displayName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList();
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),
