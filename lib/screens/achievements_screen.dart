@@ -119,17 +119,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       label: Text(label),
       selected: selected,
       onSelected: (_) => setState(() => _filter = value),
-      selectedColor: Colors.lightBlue[50],
+      selectedColor: Colors.black,
+      checkmarkColor: Colors.white,
       backgroundColor: Colors.white,
       labelStyle: TextStyle(
-        color: selected ? Colors.blue.shade800 : Colors.black87,
+        color: selected ? Colors.white : Colors.black87,
         fontWeight: FontWeight.w600,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: selected ? Colors.blue.shade800 : Colors.black12,
-        ),
+        side: BorderSide(color: selected ? Colors.black : Colors.black12),
       ),
     );
   }
@@ -299,7 +298,7 @@ class _AchievementsList extends StatelessWidget {
   }
 }
 
-class _AchievementTile extends StatefulWidget {
+class _AchievementTile extends StatelessWidget {
   final Achievement achievement;
   final bool earned;
   final int? target;
@@ -318,215 +317,104 @@ class _AchievementTile extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<_AchievementTile> createState() => _AchievementTileState();
-}
-
-class _AchievementTileState extends State<_AchievementTile>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _heightAnimation;
-  late Animation<double> _opacityAnimation;
-  late Animation<double> _rotationAnimation;
-
-  bool _isExpanded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 350),
-      vsync: this,
-    );
-
-    _heightAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutCubic,
-    );
-
-    _opacityAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
-    );
-
-    _rotationAnimation = Tween<double>(
-      begin: 0,
-      end: 0.5,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _toggleExpanded() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final a = widget.achievement;
-    final earned = widget.earned;
-    final target = widget.target;
-    final current = widget.current;
-    final progressPercent = widget.progressPercent;
+    final a = achievement;
+    final dateText = _formatUnlockedDate(unlockedValue);
 
-    return GestureDetector(
-      onTap: _toggleExpanded,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: earned ? Colors.green.shade50 : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: earned ? Colors.green.shade300 : Colors.black12,
-            width: 1,
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: earned ? Colors.green : Colors.black12,
+          width: 1.5,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 70,
-                    height: 70,
-                    child:
-                        a.photoUrl != null && a.photoUrl!.isNotEmpty && earned
-                            ? Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                image: DecorationImage(
-                                  image: NetworkImage(a.photoUrl!),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            )
-                            : (earned
-                                ? Container(
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.emoji_events,
-                                      color: Colors.orange.shade400,
-                                      size: 36,
-                                    ),
-                                  ),
-                                )
-                                : Container(
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/locked_achievement.png',
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                )),
-                  ),
-                  const SizedBox(width: 16),
+            SizedBox(width: 60, height: 60, child: _buildAchievementIcon(a)),
+            const SizedBox(width: 16),
 
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    a.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+
+                  Text(
+                    a.desc,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      height: 1.4,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (!earned && target != null && target! > 0) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: progressPercent,
+                        backgroundColor: Colors.grey.shade200,
+                        color: Colors.blue.shade400,
+                        minHeight: 5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$current/$target',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ] else if (earned) ...[
+                    Row(
                       children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.green.shade400,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          a.title,
+                          'Zdobyto: $dateText',
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: earned ? Colors.black : Colors.black87,
+                            fontSize: 11,
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w600,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  SizedBox(
-                    width: 90,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (!earned && target != null && target > 0) ...[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: LinearProgressIndicator(
-                              value: progressPercent,
-                              backgroundColor: Colors.black12,
-                              color: Colors.green.shade400,
-                              minHeight: 6,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '$current/$target',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ] else if (earned) ...[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: LinearProgressIndicator(
-                              value: 1.0,
-                              backgroundColor: Colors.green.shade300,
-                              color: Colors.green.shade400,
-                              minHeight: 6,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '100%',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.green.shade700,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-                  RotationTransition(
-                    turns: _rotationAnimation,
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Colors.grey.shade500,
-                      size: 24,
-                    ),
-                  ),
+                  ],
                 ],
-              ),
-            ),
-
-            SizeTransition(
-              sizeFactor: _heightAnimation,
-              axisAlignment: -1.0,
-              child: FadeTransition(
-                opacity: _opacityAnimation,
-                child: _buildExpandedContent(),
               ),
             ),
           ],
@@ -535,81 +423,45 @@ class _AchievementTileState extends State<_AchievementTile>
     );
   }
 
-  Widget _buildExpandedContent() {
-    final dateText = _formatUnlockedDate(widget.unlockedValue);
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.green.shade50, width: 1)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.description_outlined,
-                color: Colors.grey.shade700,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Roboto',
-                      color: Colors.grey.shade700,
-                      height: 1.5,
-                    ),
-                    children: [
-                      const TextSpan(
-                        text: 'Opis: ',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(text: widget.achievement.desc),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildAchievementIcon(Achievement a) {
+    if (a.photoUrl != null && a.photoUrl!.isNotEmpty && earned) {
+      return Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: NetworkImage(a.photoUrl!),
+            fit: BoxFit.cover,
           ),
-          if (widget.earned && dateText != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  color: Colors.grey.shade700,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Roboto',
-                      color: Colors.grey.shade700,
-                    ),
-                    children: [
-                      const TextSpan(
-                        text: 'Zdobyto: ',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(text: dateText),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
+        ),
+      );
+    } else if (earned) {
+      return Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.orange.shade100,
+        ),
+        child: Center(
+          child: Icon(
+            Icons.emoji_events,
+            color: Colors.orange.shade400,
+            size: 32,
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.grey.shade100,
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            'assets/locked_achievement.png',
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
   }
 
   String? _formatUnlockedDate(dynamic val) {
