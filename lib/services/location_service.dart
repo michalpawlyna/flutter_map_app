@@ -115,7 +115,7 @@ class LocationService {
     switch (mode) {
       case LocationMode.normal:
         accuracy = LocationAccuracy.high;
-        distanceFilter = 25;
+        distanceFilter = 0;
         androidInterval = const Duration(seconds: 10);
         minEmitMs = 1000;
         break;

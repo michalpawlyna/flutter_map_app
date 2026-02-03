@@ -14,7 +14,7 @@ class UserLocationWidget extends StatefulWidget {
   const UserLocationWidget({
     required this.positionStream,
     this.minAccuracyRadius = 25.0,
-    this.minMovementThreshold = 10.0,
+    this.minMovementThreshold = 0.0,
     this.smoothingFactor = 0.3,
     Key? key,
   }) : super(key: key);
