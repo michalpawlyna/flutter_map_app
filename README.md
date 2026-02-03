@@ -46,7 +46,7 @@ A comprehensive Flutter application that combines interactive mapping, location-
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/flutter_map_app.git
+   git clone https://github.com/michalpawlyna/flutter_map_app.git
    cd flutter_map_app
    ```
 
