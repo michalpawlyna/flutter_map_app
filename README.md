@@ -30,11 +30,11 @@ A comprehensive Flutter application that combines interactive mapping, location-
 
 ## 📸 Screenshots
 
-<img width="793" height="1600" alt="iMockup - iPhone 13 (4)" src="https://github.com/user-attachments/assets/828f3c79-6ae0-4665-bc38-52ace639c876" />
-<img width="793" height="1600" alt="iMockup - iPhone 13 (5)" src="https://github.com/user-attachments/assets/9f2acbb2-b0c8-412b-838e-fff349a44d76" />
-<img width="793" height="1600" alt="iMockup - iPhone 13 (15)" src="https://github.com/user-attachments/assets/a8c4dc89-c379-495b-8800-1a7f5c5d5c4c" />
-<img width="793" height="1600" alt="iMockup - iPhone 13 (10)" src="https://github.com/user-attachments/assets/7e407799-d2fb-4041-aca0-2b1b39c74478" />
-<img width="793" height="1600" alt="iMockup - iPhone 13 (8)" src="https://github.com/user-attachments/assets/df6ab4df-85b5-46a1-9407-691bf1f2c637" />
+<img width="200" height="400" alt="iMockup - iPhone 13 (4)" src="https://github.com/user-attachments/assets/828f3c79-6ae0-4665-bc38-52ace639c876" />
+<img width="200" height="400" alt="iMockup - iPhone 13 (5)" src="https://github.com/user-attachments/assets/9f2acbb2-b0c8-412b-838e-fff349a44d76" />
+<img width="200" height="400" alt="iMockup - iPhone 13 (15)" src="https://github.com/user-attachments/assets/a8c4dc89-c379-495b-8800-1a7f5c5d5c4c" />
+<img width="200" height="400" alt="iMockup - iPhone 13 (10)" src="https://github.com/user-attachments/assets/7e407799-d2fb-4041-aca0-2b1b39c74478" />
+<img width="200" height="400" alt="iMockup - iPhone 13 (8)" src="https://github.com/user-attachments/assets/df6ab4df-85b5-46a1-9407-691bf1f2c637" />
 
 ## 🚀 Installation
 
