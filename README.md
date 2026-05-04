@@ -71,7 +71,7 @@ A comprehensive Flutter application that combines interactive mapping, location-
    - Create a `.env` file in the root directory
    - Add your API keys:
      ```
-     GOOGLE_MAPS_API_KEY=your_api_key_here
+     OPEN_STREET_MAP_KEY=your_api_key_here
      ```
 
 5. **Run the app**
